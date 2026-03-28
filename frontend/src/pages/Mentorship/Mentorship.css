@@ -1,0 +1,184 @@
+.mentorship-page {
+    padding: 8rem 4vw 4rem;
+    min-height: 100vh;
+}
+
+.mentorship-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.mentorship-header h1 {
+    font-size: 3rem;
+    font-weight: 800;
+}
+
+.mentorship-header p {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+}
+
+.mentorship-content {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.requests-section {
+    padding: 2.5rem;
+    border-radius: 24px;
+}
+
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.section-title h3 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--primary);
+}
+
+.count-badge {
+    padding: 0.25rem 0.75rem;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary);
+    border-radius: 99px;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.request-card {
+    padding: 1.5rem;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.request-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.user-info h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.125rem;
+}
+
+.subtext {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.status-pill {
+    padding: 0.5rem 1rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-pill.pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.status-pill.accepted {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.status-pill.rejected {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.request-message {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary);
+}
+
+.request-message p {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    font-style: italic;
+    color: var(--text-main);
+}
+
+.request-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.request-actions button {
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.accept-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+}
+
+.accept-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.reject-btn {
+    background: var(--glass-bg);
+    color: var(--text-main);
+    border: 1px solid #ef4444;
+}
+
+.reject-btn:hover {
+    background: #ef4444;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.empty-requests {
+    text-align: center;
+    padding: 4rem;
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.3;
+}

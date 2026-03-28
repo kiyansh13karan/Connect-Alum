@@ -1,0 +1,166 @@
+.admin-page {
+    padding: 8rem 4vw 4rem;
+    min-height: 100vh;
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.admin-header h1 {
+    font-size: 3rem;
+    font-weight: 800;
+}
+
+.admin-header p {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+}
+
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.admin-stats {
+    padding: 2rem;
+    border-radius: 20px;
+    margin-bottom: 3rem;
+    display: flex;
+    justify-content: center;
+}
+
+.stat-box {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.stat-box svg {
+    font-size: 2.5rem;
+    color: var(--primary);
+}
+
+.stat-box span {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.stat-box h4 {
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.admin-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.admin-section {
+    padding: 2.5rem;
+    border-radius: 24px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.section-header h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--primary);
+}
+
+.verification-list,
+.reports-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.verify-card {
+    padding: 1.5rem;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-details h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.user-details p {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.email-text {
+    font-size: 0.75rem;
+    color: var(--primary);
+    opacity: 0.8;
+}
+
+.verify-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.verify-actions button {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.2s;
+}
+
+.approve-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+}
+
+.approve-btn:hover {
+    background: #059669;
+}
+
+.reject-btn {
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+}
+
+.reject-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+@media (max-width: 1000px) {
+    .admin-content {
+        grid-template-columns: 1fr;
+    }
+}
