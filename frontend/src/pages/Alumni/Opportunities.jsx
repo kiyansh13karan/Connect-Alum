@@ -1,37 +1,85 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import './AlumniPages.css';
-
-const POSTED = [
-    { id: 1, type: 'Job', title: 'Frontend Engineer', company: 'Google', location: 'Bengaluru', posted: '2 days ago', applicants: 14 },
-    { id: 2, type: 'Internship', title: 'ML Research Intern', company: 'DeepMind', location: 'Remote', posted: '5 days ago', applicants: 31 },
-    { id: 3, type: 'Referral', title: 'SDE-2 Referral', company: 'Amazon', location: 'Hyderabad', posted: '1 week ago', applicants: 8 },
-];
+import { StoreContext } from '../../context/StoreContext';
+import axios from 'axios';
 
 const TYPE_COLORS = { Job: 'ap-tag-job', Internship: 'ap-tag-intern', Referral: 'ap-tag-referral' };
-
-const EMPTY_FORM = { title: '', company: '', role: '', description: '', location: '', applyLink: '' };
+const TYPE_ICONS  = { Job: '💼', Internship: '🎓', Referral: '🤝' };
+const EMPTY_FORM  = { title: '', company: '', role: '', description: '', location: '', applyLink: '' };
 
 const Opportunities = () => {
+    const { url, token } = useContext(StoreContext);
+
     const [activeType, setActiveType] = useState('Job');
-    const [form, setForm] = useState(EMPTY_FORM);
-    const [posted, setPosted] = useState(POSTED);
-    const [showForm, setShowForm] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [form, setForm]             = useState(EMPTY_FORM);
+    const [posted, setPosted]         = useState([]);
+    const [showForm, setShowForm]     = useState(false);
+    const [success, setSuccess]       = useState(false);
+    const [loading, setLoading]       = useState(true);
+    const [filter, setFilter]         = useState('All');
+    const [error, setError]           = useState('');
+
+    // ── fetch alumni's own posts ──────────────────────────────────────────
+    const fetchMyPosts = async () => {
+        try {
+            setLoading(true);
+            const res = await axios.get(`${url}/api/jobs/alumni-posts`);
+            if (res.data.success) {
+                // show only current alumni's posts
+                const userId = JSON.parse(atob(token.split('.')[1])).id;
+                const mine   = res.data.posts.filter(p => p.postedBy?._id === userId || p.postedBy === userId);
+                setPosted(mine);
+            }
+        } catch (err) {
+            console.error('Error loading posts:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (token) fetchMyPosts();
+    }, [token]);
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-    const handlePost = (e) => {
+    // ── post a new opportunity ────────────────────────────────────────────
+    const handlePost = async (e) => {
         e.preventDefault();
         if (!form.title || !form.company) return;
-        setPosted(p => [{
-            id: Date.now(), type: activeType, title: form.title,
-            company: form.company, location: form.location, posted: 'Just now', applicants: 0
-        }, ...p]);
-        setForm(EMPTY_FORM);
-        setSuccess(true);
-        setShowForm(false);
-        setTimeout(() => setSuccess(false), 3000);
+        setError('');
+        try {
+            const res = await axios.post(
+                `${url}/api/jobs/alumni-post`,
+                { ...form, type: activeType },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (res.data.success) {
+                setPosted(prev => [res.data.post, ...prev]);
+                setForm(EMPTY_FORM);
+                setSuccess(true);
+                setShowForm(false);
+                setTimeout(() => setSuccess(false), 3500);
+            }
+        } catch (err) {
+            console.error('Error posting opportunity:', err);
+            setError(err.response?.data?.message || 'Failed to post. Please try again.');
+        }
     };
+
+    // ── remove a post ─────────────────────────────────────────────────────
+    const handleRemove = async (id) => {
+        try {
+            await axios.delete(`${url}/api/jobs/alumni-post/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setPosted(prev => prev.filter(p => p._id !== id));
+        } catch (err) {
+            console.error('Error removing post:', err);
+        }
+    };
+
+    const filtered = filter === 'All' ? posted : posted.filter(p => p.type === filter);
 
     return (
         <div className="ap-page">
@@ -47,7 +95,13 @@ const Opportunities = () => {
 
             {success && (
                 <div className="ap-success-toast">
-                    ✅ Opportunity posted successfully!
+                    ✅ Opportunity posted! Students can now see it in their Jobs section.
+                </div>
+            )}
+
+            {error && (
+                <div className="ap-error-toast">
+                    ⚠️ {error}
                 </div>
             )}
 
@@ -65,18 +119,18 @@ const Opportunities = () => {
                                 className={`ap-type-tab ${activeType === t ? 'ap-type-active' : ''}`}
                                 onClick={() => setActiveType(t)}
                             >
-                                {t === 'Job' ? '💼' : t === 'Internship' ? '🎓' : '🤝'} {t}
+                                {TYPE_ICONS[t]} {t}
                             </button>
                         ))}
                     </div>
 
                     <form className="ap-form-grid" onSubmit={handlePost}>
                         {[
-                            { label: 'Opportunity Title', key: 'title', placeholder: 'e.g. Frontend Engineer' },
-                            { label: 'Company', key: 'company', placeholder: 'e.g. Google' },
-                            { label: 'Role / Position', key: 'role', placeholder: 'e.g. SDE-2' },
-                            { label: 'Location', key: 'location', placeholder: 'e.g. Remote / Bengaluru' },
-                            { label: 'Apply Link', key: 'applyLink', placeholder: 'https://...' },
+                            { label: 'Opportunity Title', key: 'title',    placeholder: 'e.g. Frontend Engineer' },
+                            { label: 'Company',           key: 'company',  placeholder: 'e.g. Google' },
+                            { label: 'Role / Position',   key: 'role',     placeholder: 'e.g. SDE-2' },
+                            { label: 'Location',          key: 'location', placeholder: 'e.g. Remote / Bengaluru' },
+                            { label: 'Apply Link',        key: 'applyLink', placeholder: 'https://...' },
                         ].map(f => (
                             <div className="ap-form-group" key={f.key}>
                                 <label className="ap-label">{f.label}</label>
@@ -115,38 +169,63 @@ const Opportunities = () => {
                 {/* Filter */}
                 <div className="ap-filter-tabs ap-mb-sm">
                     {['All', 'Job', 'Internship', 'Referral'].map(t => (
-                        <button key={t} className="ap-filter-tab ap-filter-active">{t}</button>
+                        <button
+                            key={t}
+                            className={`ap-filter-tab ${filter === t ? 'ap-filter-active' : ''}`}
+                            onClick={() => setFilter(t)}
+                        >
+                            {t}
+                        </button>
                     ))}
                 </div>
 
                 <div className="ap-opp-list">
-                    {posted.map(opp => (
-                        <div key={opp.id} className="ap-opp-row">
-                            <div className="ap-opp-left">
-                                <span className={`ap-tag ${TYPE_COLORS[opp.type]}`}>{opp.type}</span>
-                                <div>
-                                    <h4 className="ap-opp-title">{opp.title}</h4>
-                                    <p className="ap-opp-meta">
-                                        🏢 {opp.company} &nbsp;·&nbsp; 📍 {opp.location} &nbsp;·&nbsp; 🕒 {opp.posted}
-                                    </p>
+                    {loading ? (
+                        <div className="ap-empty-card">
+                            <p className="ap-empty-icon">⏳</p>
+                            <p className="ap-empty-title">Loading your posts...</p>
+                        </div>
+                    ) : filtered.length > 0 ? (
+                        filtered.map(opp => (
+                            <div key={opp._id} className="ap-opp-row">
+                                <div className="ap-opp-left">
+                                    <span className={`ap-tag ${TYPE_COLORS[opp.type]}`}>{opp.type}</span>
+                                    <div>
+                                        <h4 className="ap-opp-title">{opp.title}</h4>
+                                        <p className="ap-opp-meta">
+                                            🏢 {opp.company} &nbsp;·&nbsp; 📍 {opp.location} &nbsp;·&nbsp;
+                                            🕒 {new Date(opp.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </p>
+                                        {opp.description && (
+                                            <p className="ap-opp-desc">{opp.description}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="ap-opp-right">
+                                    {opp.applyLink && (
+                                        <a
+                                            href={opp.applyLink.startsWith('http') ? opp.applyLink : `https://${opp.applyLink}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="ap-btn-ghost"
+                                        >
+                                            View
+                                        </a>
+                                    )}
+                                    <button
+                                        className="ap-btn-danger-ghost"
+                                        onClick={() => handleRemove(opp._id)}
+                                    >
+                                        Remove
+                                    </button>
                                 </div>
                             </div>
-                            <div className="ap-opp-right">
-                                <span className="ap-opp-applicants">{opp.applicants} applicants</span>
-                                <button className="ap-btn-ghost">View</button>
-                                <button
-                                    className="ap-btn-danger-ghost"
-                                    onClick={() => setPosted(p => p.filter(x => x.id !== opp.id))}
-                                >
-                                    Remove
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                    {posted.length === 0 && (
+                        ))
+                    ) : (
                         <div className="ap-empty-card">
                             <p className="ap-empty-icon">📭</p>
                             <p className="ap-empty-title">No opportunities posted yet</p>
+                            <p className="ap-empty-sub">Click "Post Opportunity" to share a job with students.</p>
                         </div>
                     )}
                 </div>

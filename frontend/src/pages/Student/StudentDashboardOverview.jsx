@@ -168,6 +168,10 @@ const MentorRow = ({ icon, iconBg, iconColor, title, subtitle }) => (
 const StudentDashboardOverview = () => {
     const { url, token } = useContext(StoreContext);
     const [stats, setStats] = useState({ connections: 0, appointments: 0 });
+    const [alumniJobCount, setAlumniJobCount]     = useState(0);
+    const [alumniInternCount, setAlumniInternCount] = useState(0);
+    const [latestAlumniJobs, setLatestAlumniJobs] = useState([]);
+    const [upcomingEvents, setUpcomingEvents]     = useState([]);
     const [name, setName] = useState('Student');
 
     useEffect(() => {
@@ -184,6 +188,24 @@ const StudentDashboardOverview = () => {
                     connections: accepted.length,
                     appointments: appRes.data.appointments ? appRes.data.appointments.length : 0,
                 });
+
+                // Fetch alumni-posted jobs — split into Jobs and Internships
+                const jobRes = await axios.get(url + '/api/jobs/alumni-posts');
+                if (jobRes.data.success) {
+                    const allPosts = jobRes.data.posts;
+                    const jobPosts    = allPosts.filter(p => p.type !== 'Internship');
+                    const internPosts = allPosts.filter(p => p.type === 'Internship');
+                    setAlumniJobCount(jobPosts.length);
+                    setAlumniInternCount(internPosts.length);
+                    setLatestAlumniJobs(jobPosts.slice(0, 3));
+                }
+
+                // Fetch alumni-posted events
+                const evtRes = await axios.get(url + '/api/events');
+                const evtData = evtRes.data;
+                const allEvents = evtData.success ? evtData.events : (Array.isArray(evtData) ? evtData : []);
+                const upcoming = allEvents.filter(e => e.status !== 'completed').slice(0, 3);
+                setUpcomingEvents(upcoming);
             } catch (error) {
                 console.error('Error fetching overview:', error);
             }
@@ -208,8 +230,8 @@ const StudentDashboardOverview = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                 <StatCard to="/student/mentors"      icon={faUserTie}      value={stats.connections}   label="Active Mentors"  iconBg="#eff6ff" iconColor="#2563eb" borderColor="#bfdbfe" />
                 <StatCard to="/student/appointments" icon={faCalendarCheck} value={stats.appointments}  label="Appointments"    iconBg="#f0fdf4" iconColor="#16a34a" borderColor="#bbf7d0" />
-                <StatCard to="/student/opportunities" icon={faBriefcase}  value={4}                    label="Open Jobs"       iconBg="#eef2ff" iconColor="#4f46e5" borderColor="#c7d2fe" />
-                <StatCard to="/student/internships"  icon={faLaptopCode}   value={2}                   label="Internships"     iconBg="#fffbeb" iconColor="#d97706" borderColor="#fde68a" />
+                <StatCard to="/student/opportunities" icon={faBriefcase}  value={alumniJobCount}       label="Alumni Jobs"     iconBg="#eef2ff" iconColor="#4f46e5" borderColor="#c7d2fe" />
+                <StatCard to="/student/internships"  icon={faLaptopCode}   value={alumniInternCount}    label="Internships"     iconBg="#f5f3ff" iconColor="#7c3aed" borderColor="#ddd6fe" />
             </div>
 
             {/* ── Row 2: Quick Actions | Upcoming Appointments ── */}
@@ -288,84 +310,186 @@ const StudentDashboardOverview = () => {
                 <div style={card}>
                     <div style={sectionHeader}>
                         <h2 style={sectionTitle}>Upcoming Events</h2>
-                        <Link to="/student/events" style={pillLink}>View Calendar</Link>
+                        <Link to="/student/events" style={pillLink}>View All</Link>
                     </div>
-                    <div style={{
-                        textAlign: 'center', padding: '28px 16px',
-                        backgroundColor: '#f9fafb', borderRadius: '12px',
-                        border: '1px solid #f3f4f6',
-                    }}>
-                        <div style={{
-                            width: '44px', height: '44px', borderRadius: '50%',
-                            backgroundColor: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            margin: '0 auto 12px auto', color: '#2563eb', fontSize: '18px',
-                        }}>
-                            <FontAwesomeIcon icon={faCalendarAlt} />
-                        </div>
-                        <p style={{ fontSize: '14px', color: '#4b5563', fontWeight: 500, margin: 0 }}>
-                            Join seminars, AMAs, and networking events.
-                        </p>
-                        <Link
-                            to="/student/events"
-                            style={{
-                                display: 'inline-block', marginTop: '14px',
-                                padding: '8px 20px',
-                                backgroundColor: '#2563eb', color: '#fff',
+                    {upcomingEvents.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {upcomingEvents.map(evt => {
+                                const typeColors = { webinar: '#2563eb', career: '#7c3aed', ama: '#16a34a' };
+                                const typeBgs   = { webinar: '#eff6ff', career: '#f5f3ff', ama:  '#f0fdf4' };
+                                const typeIcons = { webinar: '🖥️', career: '🎤', ama: '💬' };
+                                const c = typeColors[evt.type] || '#4f46e5';
+                                const bg = typeBgs[evt.type] || '#eef2ff';
+                                const formatDate = (d) => { try { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); } catch { return d; } };
+                                return (
+                                    <div key={evt._id} style={{
+                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                        padding: '10px 12px',
+                                        backgroundColor: '#f9fafb', border: '1px solid #f3f4f6',
+                                        borderRadius: '10px',
+                                    }}>
+                                        <div style={{
+                                            width: '34px', height: '34px', borderRadius: '8px',
+                                            backgroundColor: bg, color: c,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '14px', flexShrink: 0,
+                                        }}>
+                                            {typeIcons[evt.type] || '📅'}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ fontSize: '12px', fontWeight: 700, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {evt.title}
+                                            </p>
+                                            <p style={{ fontSize: '10px', color: '#9ca3af', margin: '2px 0 0 0' }}>
+                                                {formatDate(evt.date || evt.updatedOn)}{evt.time ? ' · ' + evt.time : ''}
+                                            </p>
+                                        </div>
+                                        <span style={{
+                                            fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '100px',
+                                            background: bg, color: c, flexShrink: 0,
+                                        }}>
+                                            {evt.type || 'Event'}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                            <Link to="/student/events" style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                padding: '8px', marginTop: '2px',
+                                backgroundColor: '#eff6ff', color: '#2563eb',
                                 borderRadius: '8px', textDecoration: 'none',
-                                fontSize: '12px', fontWeight: 600,
-                            }}
-                        >
-                            View Events
-                        </Link>
-                    </div>
+                                fontSize: '11px', fontWeight: 600,
+                            }}>
+                                View All Events <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: '9px' }} />
+                            </Link>
+                        </div>
+                    ) : (
+                        <div style={{
+                            textAlign: 'center', padding: '24px 16px',
+                            backgroundColor: '#f9fafb', borderRadius: '12px',
+                            border: '1px solid #f3f4f6',
+                        }}>
+                            <div style={{
+                                width: '40px', height: '40px', borderRadius: '50%',
+                                backgroundColor: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                margin: '0 auto 10px auto', color: '#2563eb', fontSize: '16px',
+                            }}>
+                                <FontAwesomeIcon icon={faCalendarAlt} />
+                            </div>
+                            <p style={{ fontSize: '13px', color: '#4b5563', fontWeight: 500, margin: 0 }}>
+                                No upcoming events yet.
+                            </p>
+                            <Link to="/student/events" style={{
+                                display: 'inline-block', marginTop: '10px',
+                                padding: '6px 16px', backgroundColor: '#2563eb', color: '#fff',
+                                borderRadius: '8px', textDecoration: 'none', fontSize: '11px', fontWeight: 600,
+                            }}>
+                                Browse Events
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* ── Row 4: Latest Opportunities ── */}
+            {/* ── Row 4: Latest Opportunities (from Alumni) ── */}
             <div style={card}>
                 <div style={sectionHeader}>
-                    <h2 style={sectionTitle}>Latest Opportunities</h2>
-                    <Link to="/student/opportunities" style={pillLink}>View Jobs</Link>
+                    <h2 style={sectionTitle}>Latest Alumni Opportunities</h2>
+                    <Link to="/student/opportunities" style={pillLink}>View All Jobs</Link>
                 </div>
-                <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    flexWrap: 'wrap', gap: '16px',
-                    backgroundColor: '#eef2ff', border: '1px solid #c7d2fe',
-                    borderRadius: '12px', padding: '20px 24px',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{
-                            width: '48px', height: '48px', borderRadius: '12px',
-                            backgroundColor: '#dbeafe', color: '#4f46e5',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '18px', flexShrink: 0,
-                        }}>
-                            <FontAwesomeIcon icon={faBriefcase} />
-                        </div>
-                        <div>
-                            <p style={{ fontSize: '14px', fontWeight: 700, color: '#1e1b4b', margin: 0 }}>
-                                Software Engineering Roles
-                            </p>
-                            <p style={{ fontSize: '12px', color: '#6366f1', marginTop: '4px', marginBottom: 0 }}>
-                                Multiple companies actively recruiting.
-                            </p>
-                        </div>
+                {latestAlumniJobs.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {latestAlumniJobs.map(job => (
+                            <div key={job._id} style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '12px 16px',
+                                backgroundColor: '#f9fafb', border: '1px solid #f3f4f6',
+                                borderRadius: '12px', gap: '12px', flexWrap: 'wrap',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        width: '36px', height: '36px', borderRadius: '10px',
+                                        backgroundColor: '#eef2ff', color: '#4f46e5',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '14px', flexShrink: 0,
+                                    }}>
+                                        <FontAwesomeIcon icon={faBriefcase} />
+                                    </div>
+                                    <div style={{ minWidth: 0 }}>
+                                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {job.title}
+                                        </p>
+                                        <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0 0' }}>
+                                            {job.company} · {job.location}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span style={{
+                                    fontSize: '10px', fontWeight: 700,
+                                    padding: '3px 10px', borderRadius: '100px',
+                                    backgroundColor: job.type === 'Job' ? '#eff6ff' : job.type === 'Internship' ? '#f5f3ff' : '#f0fdf4',
+                                    color: job.type === 'Job' ? '#2563eb' : job.type === 'Internship' ? '#7c3aed' : '#16a34a',
+                                    border: `1px solid ${job.type === 'Job' ? '#bfdbfe' : job.type === 'Internship' ? '#ddd6fe' : '#bbf7d0'}`,
+                                    flexShrink: 0,
+                                }}>
+                                    {job.type}
+                                </span>
+                            </div>
+                        ))}
+                        <Link
+                            to="/student/opportunities"
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                padding: '10px', marginTop: '4px',
+                                backgroundColor: '#eff6ff', color: '#2563eb',
+                                borderRadius: '10px', textDecoration: 'none',
+                                fontSize: '12px', fontWeight: 600,
+                            }}
+                        >
+                            View All Opportunities <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: '10px' }} />
+                        </Link>
                     </div>
-                    <Link
-                        to="/student/opportunities"
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            padding: '10px 22px',
-                            backgroundColor: '#1e1b4b', color: '#fff',
-                            borderRadius: '8px', textDecoration: 'none',
-                            fontSize: '13px', fontWeight: 600,
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
-                        Explore Openings <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: '11px' }} />
-                    </Link>
-                </div>
+                ) : (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        flexWrap: 'wrap', gap: '16px',
+                        backgroundColor: '#eef2ff', border: '1px solid #c7d2fe',
+                        borderRadius: '12px', padding: '20px 24px',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div style={{
+                                width: '48px', height: '48px', borderRadius: '12px',
+                                backgroundColor: '#dbeafe', color: '#4f46e5',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '18px', flexShrink: 0,
+                            }}>
+                                <FontAwesomeIcon icon={faBriefcase} />
+                            </div>
+                            <div>
+                                <p style={{ fontSize: '14px', fontWeight: 700, color: '#1e1b4b', margin: 0 }}>
+                                    No Alumni Posts Yet
+                                </p>
+                                <p style={{ fontSize: '12px', color: '#6366f1', marginTop: '4px', marginBottom: 0 }}>
+                                    Check the Jobs section for external listings.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            to="/student/opportunities"
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                padding: '10px 22px',
+                                backgroundColor: '#1e1b4b', color: '#fff',
+                                borderRadius: '8px', textDecoration: 'none',
+                                fontSize: '13px', fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            Explore Openings <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: '11px' }} />
+                        </Link>
+                    </div>
+                )}
             </div>
 
         </div>

@@ -5,16 +5,38 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUser, faSignOutAlt, faGraduationCap, faSearch,
   faComments, faLayerGroup, faBell, faTimes, faChevronRight,
+  faBolt, faHandshake, faBriefcase, faCalendar, faChartBar,
+  faCog, faHome, faUserGraduate,
 } from '@fortawesome/free-solid-svg-icons';
+import './Navbar.css';
 
-const NAV_LINKS = (role) => [
-  { label: 'Home',         path: '/' },
-  { label: 'Mentorship',   path: role === 'alumni' ? '/alumni/dashboard' : '/student/mentors' },
-  { label: 'Jobs',         path: role === 'alumni' ? '/alumni/dashboard' : '/student/opportunities' },
-  { label: 'Internships',  path: role === 'alumni' ? '/alumni/dashboard' : '/student/internships' },
-  { label: 'Events',       path: role === 'alumni' ? '/alumni/dashboard' : '/student/events' },
+/* ─── Nav config per role ───────────────────────────────── */
+const ALUMNI_NAV = [
+  { label: 'Dashboard',        path: '/alumni/dashboard',     icon: faBolt },
+  { label: 'My Profile',       path: '/alumni/profile',       icon: faUser },
+  { label: 'Requests',         path: '/alumni/requests',      icon: faHandshake },
+  { label: 'Opportunities',    path: '/alumni/opportunities', icon: faBriefcase },
+  { label: 'Messages',         path: '/alumni/messages',      icon: faComments },
+  { label: 'Events',           path: '/alumni/events',        icon: faCalendar },
+  { label: 'Analytics',        path: '/alumni/analytics',     icon: faChartBar },
+  { label: 'Settings',         path: '/alumni/settings',      icon: faCog },
 ];
 
+const STUDENT_NAV = [
+  { label: 'Dashboard',    path: '/student/dashboard',     icon: faBolt },
+  { label: 'Mentors',      path: '/student/mentors',       icon: faUserGraduate },
+  { label: 'Opportunities',path: '/student/opportunities', icon: faBriefcase },
+  { label: 'Internships',  path: '/student/internships',   icon: faGraduationCap },
+  { label: 'Messages',     path: '/student/messages',      icon: faComments },
+  { label: 'Events',       path: '/student/events',        icon: faCalendar },
+];
+
+const PUBLIC_NAV = [
+  { label: 'Home',         path: '/',         icon: faHome },
+  { label: 'Mentorship',   path: '/alumni-discovery', icon: faHandshake },
+];
+
+/* ─── Navbar ─────────────────────────────────────────────── */
 const Navbar = ({ setShowLogin }) => {
   const [isScrolled,    setIsScrolled]    = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -36,7 +58,9 @@ const Navbar = ({ setShowLogin }) => {
   useEffect(() => { setRole(localStorage.getItem('role')); }, [token]);
 
   useEffect(() => {
-    const handler = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false); };
+    const handler = (e) => {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
@@ -51,243 +75,125 @@ const Navbar = ({ setShowLogin }) => {
     navigate('/');
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) =>
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+  /* pick which nav to show */
+  const navLinks = role === 'alumni'
+    ? ALUMNI_NAV
+    : role === 'student'
+    ? STUDENT_NAV
+    : PUBLIC_NAV;
 
   return (
     <>
-      {/* ─── Navbar ─────────────────────────────────────────── */}
-      <nav
-        style={{
-          position: 'fixed',
-          top: 0, left: 0,
-          width: '100%',
-          zIndex: 1000,
-          borderBottom: '1px solid rgba(226,232,240,0.8)',
-          transition: 'all 0.3s ease',
-          backgroundColor: isScrolled ? 'rgba(255,255,255,0.97)' : 'rgba(255,255,255,0.92)',
-          backdropFilter: 'blur(14px)',
-          boxShadow: isScrolled ? '0 2px 20px rgba(0,0,0,0.08)' : '0 1px 4px rgba(0,0,0,0.04)',
-        }}
-      >
-        <div style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '0 24px',
-          height: '60px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px',
-        }}>
+      <nav className={`nb-root ${isScrolled ? 'nb-scrolled' : ''} ${role === 'alumni' ? 'nb-alumni' : ''} ${role === 'student' ? 'nb-student' : ''}`}>
+        <div className="nb-inner">
 
           {/* ── Logo ── */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', flexShrink: 0 }}>
-            <div style={{
-              width: '36px', height: '36px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(37,99,235,0.3)',
-              flexShrink: 0,
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(37,99,235,0.4)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.3)'; }}
-            >
-              <FontAwesomeIcon icon={faGraduationCap} style={{ color: '#fff', fontSize: '16px' }} />
+          <Link to="/" className="nb-logo">
+            <div className="nb-logo-icon">
+              <FontAwesomeIcon icon={faGraduationCap} />
             </div>
-            <span style={{ fontSize: '18px', fontWeight: 900, color: '#1e293b', letterSpacing: '-0.5px' }}>
-              Connect<span style={{ color: '#2563eb' }}>Alum</span>
+            <span className="nb-logo-text">
+              Connect<span className="nb-logo-accent">Alum</span>
             </span>
           </Link>
 
-          {/* ── Search ── */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: searchFocused ? '#fff' : '#f1f5f9',
-            border: `1px solid ${searchFocused ? '#93c5fd' : '#e2e8f0'}`,
-            borderRadius: '12px',
-            padding: '7px 14px',
-            width: searchFocused ? '260px' : '200px',
-            transition: 'all 0.25s ease',
-            boxShadow: searchFocused ? '0 0 0 3px rgba(59,130,246,0.12)' : 'none',
-            flexShrink: 0,
-          }}>
-            <FontAwesomeIcon icon={faSearch} style={{ color: searchFocused ? '#3b82f6' : '#94a3b8', fontSize: '12px', transition: 'color 0.2s' }} />
-            <input
-              type="text"
-              placeholder="Search company, role..."
-              value={searchVal}
-              onChange={e => setSearchVal(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={{ background: 'none', border: 'none', outline: 'none', fontSize: '13px', color: '#374151', width: '100%', fontWeight: 500 }}
-            />
-            {searchVal && (
-              <button onClick={() => setSearchVal('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, lineHeight: 1 }}>
-                <FontAwesomeIcon icon={faTimes} style={{ fontSize: '11px' }} />
-              </button>
-            )}
-          </div>
+          {/* ── Search — hidden when logged in to save space for nav links ── */}
+          {!token && (
+            <div className={`nb-search ${searchFocused ? 'nb-search-focused' : ''}`}>
+              <FontAwesomeIcon icon={faSearch} className="nb-search-icon" />
+              <input
+                type="text"
+                placeholder="Search company, role..."
+                value={searchVal}
+                onChange={e => setSearchVal(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                className="nb-search-input"
+              />
+              {searchVal && (
+                <button onClick={() => setSearchVal('')} className="nb-search-clear">
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* ── Nav Links ── */}
-          <ul style={{ display: 'flex', alignItems: 'center', gap: '2px', listStyle: 'none', margin: 0, padding: 0, flexShrink: 0 }}>
-            {NAV_LINKS(role).map(link => {
+          <ul className="nb-links">
+            {navLinks.map(link => {
               const active = isActive(link.path);
               return (
-                <li key={link.label}>
+                <li key={link.path}>
                   <Link
                     to={link.path}
-                    style={{
-                      display: 'block',
-                      padding: '6px 14px',
-                      borderRadius: '10px',
-                      fontSize: '13.5px',
-                      fontWeight: active ? 700 : 600,
-                      color: active ? '#2563eb' : '#475569',
-                      backgroundColor: active ? '#eff6ff' : 'transparent',
-                      textDecoration: 'none',
-                      position: 'relative',
-                      transition: 'all 0.18s ease',
-                      borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
-                    }}
-                    onMouseEnter={e => {
-                      if (!active) {
-                        e.currentTarget.style.color = '#2563eb';
-                        e.currentTarget.style.backgroundColor = '#f0f9ff';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (!active) {
-                        e.currentTarget.style.color = '#475569';
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
+                    title={link.label}
+                    className={`nb-link ${active ? 'nb-link-active' : ''}`}
                   >
-                    {link.label}
+                    <span className="nb-link-icon">
+                      <FontAwesomeIcon icon={link.icon} />
+                    </span>
+                    <span className="nb-link-label">{link.label}</span>
+                    {active && <span className="nb-link-dot" />}
                   </Link>
                 </li>
               );
             })}
           </ul>
 
-          {/* ── Right Side ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* ── Right Controls ── */}
+          <div className="nb-right">
 
-            {/* Messages */}
+            {/* Messages icon */}
             {token && (
               <Link
                 to={role === 'alumni' ? '/alumni/messages' : '/student/messages'}
+                className="nb-icon-btn"
                 title="Messages"
-                style={{ position: 'relative', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', color: '#64748b', textDecoration: 'none', transition: 'all 0.18s ease' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#2563eb'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
               >
-                <FontAwesomeIcon icon={faComments} style={{ fontSize: '15px' }} />
-                <span style={{ position: 'absolute', top: '8px', right: '8px', width: '7px', height: '7px', backgroundColor: '#ef4444', borderRadius: '50%', border: '1.5px solid #fff' }} />
+                <FontAwesomeIcon icon={faComments} />
+                <span className="nb-dot nb-dot-red" />
               </Link>
             )}
 
             {/* Bell */}
             {token && (
-              <button
-                title="Notifications"
-                style={{ position: 'relative', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', transition: 'all 0.18s ease' }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#2563eb'; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#64748b'; }}
-              >
-                <FontAwesomeIcon icon={faBell} style={{ fontSize: '15px' }} />
-                <span style={{ position: 'absolute', top: '8px', right: '8px', width: '7px', height: '7px', backgroundColor: '#f59e0b', borderRadius: '50%', border: '1.5px solid #fff' }} />
+              <button className="nb-icon-btn" title="Notifications">
+                <FontAwesomeIcon icon={faBell} />
+                <span className="nb-dot nb-dot-amber" />
               </button>
             )}
 
             {/* Sign In / Avatar */}
             {!token ? (
-              <button
-                onClick={() => navigate('/login')}
-                style={{
-                  padding: '8px 18px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '10px',
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
-                  transition: 'all 0.2s ease',
-                  letterSpacing: '0.2px',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(37,99,235,0.4)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(37,99,235,0.3)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
+              <button className="nb-signin-btn" onClick={() => navigate('/login')}>
                 Sign In
               </button>
             ) : (
               <div ref={dropRef} style={{ position: 'relative' }}>
-
-                {/* Avatar button */}
+                {/* Avatar */}
                 <button
+                  className={`nb-avatar ${dropOpen ? 'nb-avatar-open' : ''}`}
                   onClick={() => setDropOpen(p => !p)}
-                  style={{
-                    width: '36px', height: '36px',
-                    borderRadius: '10px',
-                    background: dropOpen ? 'linear-gradient(135deg, #1d4ed8, #4f46e5)' : 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                    border: dropOpen ? '2px solid #93c5fd' : '2px solid rgba(255,255,255,0.8)',
-                    color: '#fff',
-                    fontSize: '13px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    boxShadow: dropOpen ? '0 0 0 3px rgba(59,130,246,0.2)' : '0 2px 6px rgba(37,99,235,0.3)',
-                    transition: 'all 0.2s ease',
-                    transform: dropOpen ? 'scale(0.95)' : 'scale(1)',
-                  }}
-                  onMouseEnter={e => { if (!dropOpen) e.currentTarget.style.boxShadow = '0 4px 12px rgba(37,99,235,0.4)'; }}
-                  onMouseLeave={e => { if (!dropOpen) e.currentTarget.style.boxShadow = '0 2px 6px rgba(37,99,235,0.3)'; }}
                 >
                   {(role || 'U')[0].toUpperCase()}
                 </button>
 
                 {/* Dropdown */}
-                <div style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 10px)',
-                  width: '220px',
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '16px',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                  overflow: 'hidden',
-                  zIndex: 1001,
-                  transition: 'all 0.2s ease',
-                  transformOrigin: 'top right',
-                  opacity: dropOpen ? 1 : 0,
-                  transform: dropOpen ? 'scale(1) translateY(0)' : 'scale(0.94) translateY(-6px)',
-                  pointerEvents: dropOpen ? 'auto' : 'none',
-                }}>
-                  {/* Header */}
-                  <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #eff6ff, #eef2ff)', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '14px', flexShrink: 0 }}>
-                      {(role || 'U')[0].toUpperCase()}
-                    </div>
+                <div className={`nb-dropdown ${dropOpen ? 'nb-dropdown-open' : ''}`}>
+                  <div className="nb-drop-header">
+                    <div className="nb-drop-avatar">{(role || 'U')[0].toUpperCase()}</div>
                     <div>
-                      <p style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>Signed in as</p>
-                      <p style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', margin: '2px 0 0', textTransform: 'capitalize' }}>{role}</p>
+                      <p className="nb-drop-signed">Signed in as</p>
+                      <p className="nb-drop-role">{role}</p>
                     </div>
                   </div>
-
-                  {/* Items */}
-                  <div style={{ padding: '8px' }}>
-                    {[
-                      { icon: faUser,       label: 'My Profile', action: () => navigate('/profile') },
-                      { icon: faLayerGroup, label: 'Dashboard',  action: () => navigate(role === 'student' ? '/student/dashboard' : '/alumni/dashboard') },
-                    ].map(item => (
-                      <DropItem key={item.label} icon={item.icon} label={item.label} onClick={() => { item.action(); setDropOpen(false); }} />
-                    ))}
-                    <div style={{ margin: '6px 0', borderTop: '1px solid #f1f5f9' }} />
+                  <div className="nb-drop-body">
+                    <DropItem icon={faUser}       label="My Profile" onClick={() => { navigate('/profile'); setDropOpen(false); }} />
+                    <DropItem icon={faLayerGroup} label="Dashboard"  onClick={() => { navigate(role === 'student' ? '/student/dashboard' : '/alumni/dashboard'); setDropOpen(false); }} />
+                    <div className="nb-drop-sep" />
                     <DropItem icon={faSignOutAlt} label="Sign Out" onClick={logout} danger />
                   </div>
                 </div>
@@ -295,61 +201,53 @@ const Navbar = ({ setShowLogin }) => {
             )}
 
             {/* Mobile hamburger */}
-            <button
-              onClick={() => setMobileOpen(p => !p)}
-              style={{ display: 'none' }}
-              className="md:hidden w-9 h-9 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors flex items-center justify-center border-none bg-transparent cursor-pointer"
-            >
-              ☰
+            <button className="nb-hamburger" onClick={() => setMobileOpen(p => !p)}>
+              {mobileOpen ? '✕' : '☰'}
             </button>
           </div>
         </div>
+
+        {/* ── Mobile Menu ── */}
+        <div className={`nb-mobile-menu ${mobileOpen ? 'nb-mobile-open' : ''}`}>
+          {navLinks.map(link => (
+            <Link
+              key={link.path}
+              to={link.path}
+              className={`nb-mobile-link ${isActive(link.path) ? 'nb-mobile-active' : ''}`}
+            >
+              <FontAwesomeIcon icon={link.icon} className="nb-ml-icon" />
+              {link.label}
+            </Link>
+          ))}
+          {token && (
+            <button className="nb-mobile-logout" onClick={logout}>
+              <FontAwesomeIcon icon={faSignOutAlt} /> Sign Out
+            </button>
+          )}
+        </div>
       </nav>
 
-      {/* ─── Spacer ─────────────────────────────────────────── */}
-      <div style={{ height: '60px' }} />
+      {/* Spacer */}
+      <div className="nb-spacer" />
     </>
   );
 };
 
-/* ── Dropdown Item ───────────────────────────────────────── */
+/* ─── Dropdown Item ───────────────────────────────────────── */
 const DropItem = ({ icon, label, onClick, danger }) => {
-  const [hovered, setHovered] = useState(false);
+  const [hov, setHov] = useState(false);
   return (
     <button
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width: '100%',
-        padding: '9px 12px',
-        border: 'none',
-        borderRadius: '10px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        fontSize: '13.5px',
-        fontWeight: 600,
-        cursor: 'pointer',
-        textAlign: 'left',
-        transition: 'all 0.15s ease',
-        color: hovered ? (danger ? '#dc2626' : '#2563eb') : (danger ? '#ef4444' : '#374151'),
-        backgroundColor: hovered ? (danger ? '#fef2f2' : '#eff6ff') : 'transparent',
-      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className={`nb-drop-item ${danger ? 'nb-drop-danger' : ''} ${hov ? 'nb-drop-item-hov' : ''}`}
     >
-      <span style={{
-        width: '28px', height: '28px',
-        borderRadius: '8px',
-        backgroundColor: hovered ? (danger ? '#fee2e2' : '#dbeafe') : '#f1f5f9',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: hovered ? (danger ? '#dc2626' : '#2563eb') : '#94a3b8',
-        transition: 'all 0.15s ease',
-        flexShrink: 0,
-      }}>
+      <span className={`nb-drop-item-icon ${danger ? 'nb-dii-danger' : ''} ${hov ? 'nb-dii-hov' : ''}`}>
         <FontAwesomeIcon icon={icon} style={{ fontSize: '11px' }} />
       </span>
       {label}
-      <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '9px', marginLeft: 'auto', color: hovered ? (danger ? '#dc2626' : '#93c5fd') : '#d1d5db', transition: 'color 0.15s' }} />
+      <FontAwesomeIcon icon={faChevronRight} className="nb-drop-arrow" />
     </button>
   );
 };

@@ -1,43 +1,42 @@
 import React, { useState, useEffect, useContext } from 'react';
-import './Jobs.css';
+import '../Jobs/Jobs.css';
+import './Internships.css';
 import { StoreContext } from '../../context/StoreContext';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSearch, faMapMarkerAlt, faBuilding,
-    faExternalLinkAlt, faLightbulb, faBriefcase, faHandshake,
+    faExternalLinkAlt, faLightbulb, faGraduationCap,
+    faClock, faClipboardList,
 } from '@fortawesome/free-solid-svg-icons';
 
-/* Only Job + Referral types belong on this page */
-const TYPE_META = {
-    Job:      { icon: faBriefcase, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', label: 'Job' },
-    Referral: { icon: faHandshake, color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0', label: 'Referral' },
-};
+const AlumniInternCard = ({ job }) => (
+    <div className="intern-card">
+        {/* Accent bar */}
+        <div className="intern-card-bar" />
 
-const AlumniJobCard = ({ job }) => {
-    const meta = TYPE_META[job.type] || TYPE_META.Job;
-    return (
-        <div className="alumni-job-card">
-            <span
-                className="alumni-type-badge"
-                style={{ color: meta.color, background: meta.bg, border: `1px solid ${meta.border}` }}
-            >
-                <FontAwesomeIcon icon={meta.icon} />
-                {meta.label}
+        <div className="intern-card-body">
+            {/* Badge */}
+            <span className="intern-badge">
+                <FontAwesomeIcon icon={faGraduationCap} />
+                Internship
             </span>
 
-            <h3 className="alumni-job-title">{job.title}</h3>
+            <h3 className="intern-title">{job.title}</h3>
 
-            <div className="alumni-job-meta">
+            <div className="intern-meta">
                 <span><FontAwesomeIcon icon={faBuilding} /> {job.company}</span>
                 <span><FontAwesomeIcon icon={faMapMarkerAlt} /> {job.location}</span>
+                {job.role && <span><FontAwesomeIcon icon={faClipboardList} /> {job.role}</span>}
             </div>
 
-            {job.description && <p className="alumni-job-desc">{job.description}</p>}
+            {(job.description) && (
+                <p className="intern-desc">{job.description}</p>
+            )}
 
-            <div className="alumni-job-footer">
+            <div className="intern-footer">
                 <div className="alumni-poster-info">
-                    <div className="alumni-poster-avatar">
+                    <div className="intern-avatar">
                         {job.posterName?.[0]?.toUpperCase() || job.postedBy?.name?.[0]?.toUpperCase() || 'A'}
                     </div>
                     <span className="alumni-poster-name">
@@ -52,7 +51,7 @@ const AlumniJobCard = ({ job }) => {
                         href={job.applyLink.startsWith('http') ? job.applyLink : `https://${job.applyLink}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="alumni-apply-btn"
+                        className="intern-apply-btn"
                     >
                         Apply <FontAwesomeIcon icon={faExternalLinkAlt} />
                     </a>
@@ -61,31 +60,29 @@ const AlumniJobCard = ({ job }) => {
                 )}
             </div>
         </div>
-    );
-};
+    </div>
+);
 
-const Jobs = () => {
+const Internships = () => {
     const { url, token } = useContext(StoreContext);
 
-    const [alumniJobs, setAlumniJobs]         = useState([]);
+    const [alumniInterns, setAlumniInterns]   = useState([]);
     const [alumniLoading, setAlumniLoading]   = useState(true);
-    const [alumniFilter, setAlumniFilter]     = useState('All');
 
-    const [jobs, setJobs]             = useState([]);
-    const [loading, setLoading]       = useState(false);
-    const [search, setSearch]         = useState({ query: 'Software Engineer', location: 'Remote' });
+    const [jobs, setJobs]           = useState([]);
+    const [loading, setLoading]     = useState(false);
+    const [search, setSearch]       = useState({ query: 'Software Internship', location: 'Remote' });
     const [recommendations, setRecommendations] = useState([]);
 
-    const fetchAlumniPosts = async () => {
+    const fetchAlumniInterns = async () => {
         try {
             setAlumniLoading(true);
             const res = await axios.get(`${url}/api/jobs/alumni-posts`);
             if (res.data.success) {
-                // Only Jobs and Referrals on this page
-                setAlumniJobs(res.data.posts.filter(p => p.type !== 'Internship'));
+                setAlumniInterns(res.data.posts.filter(p => p.type === 'Internship'));
             }
         } catch (error) {
-            console.error('Error fetching alumni posts:', error);
+            console.error('Error fetching alumni internships:', error);
         } finally {
             setAlumniLoading(false);
         }
@@ -97,7 +94,7 @@ const Jobs = () => {
             const response = await axios.get(`${url}/api/jobs?query=${q}&location=${loc}`);
             setJobs(response.data);
         } catch (error) {
-            console.error('Error fetching jobs:', error);
+            console.error('Error fetching internships:', error);
         } finally {
             setLoading(false);
         }
@@ -111,7 +108,7 @@ const Jobs = () => {
             });
             const skills = profileRes.data.user.skills;
             if (skills && skills.length > 0) {
-                const recQuery = skills[0] + ' Developer';
+                const recQuery = skills[0] + ' Internship';
                 const response = await axios.get(`${url}/api/jobs?query=${recQuery}&location=Remote`);
                 setRecommendations(response.data.slice(0, 3));
             }
@@ -121,7 +118,7 @@ const Jobs = () => {
     };
 
     useEffect(() => {
-        fetchAlumniPosts();
+        fetchAlumniInterns();
         fetchJobs();
         fetchRecommendations();
     }, [url]);
@@ -131,61 +128,50 @@ const Jobs = () => {
         fetchJobs();
     };
 
-    const filteredAlumni = alumniFilter === 'All'
-        ? alumniJobs
-        : alumniJobs.filter(j => j.type === alumniFilter);
-
     return (
         <div className="jobs-page animate-fade-in">
-            <header className="jobs-header">
-                <h1>💼 <span className="highlight">Job</span> Opportunities</h1>
-                <p>Full-time roles &amp; referrals posted by alumni — plus the best from across the web.</p>
+            <header className="jobs-header intern-header">
+                <h1>🎓 <span className="highlight-purple">Internship</span> Opportunities</h1>
+                <p>Internships posted directly by alumni — and the best from across the web.</p>
             </header>
 
             <div className="jobs-container">
 
-                {/* ── Alumni Posted Jobs ─────────────────────────── */}
-                <section className="alumni-jobs-section">
-                    <div className="alumni-jobs-header">
-                        <h2 className="alumni-jobs-title">🎓 Posted by Alumni</h2>
-                        <div className="alumni-filter-row">
-                            {['All', 'Job', 'Referral'].map(t => (
-                                <button
-                                    key={t}
-                                    className={`alumni-filter-btn ${alumniFilter === t ? 'active' : ''}`}
-                                    onClick={() => setAlumniFilter(t)}
-                                >
-                                    {t}
-                                </button>
-                            ))}
-                        </div>
+                {/* ── Alumni-Posted Internships ───────────────────── */}
+                <section className="intern-section">
+                    <div className="intern-section-header">
+                        <h2 className="intern-section-title">🎓 Posted by Alumni</h2>
+                        <span className="intern-count-badge">
+                            {alumniInterns.length} available
+                        </span>
                     </div>
 
                     {alumniLoading ? (
                         <div className="alumni-loading">
-                            <div className="alumni-spinner" /> Loading alumni job posts...
+                            <div className="intern-spinner" /> Loading alumni internships...
                         </div>
-                    ) : filteredAlumni.length > 0 ? (
-                        <div className="alumni-cards-grid">
-                            {filteredAlumni.map(job => <AlumniJobCard key={job._id} job={job} />)}
+                    ) : alumniInterns.length > 0 ? (
+                        <div className="intern-cards-grid">
+                            {alumniInterns.map(job => <AlumniInternCard key={job._id} job={job} />)}
                         </div>
                     ) : (
-                        <div className="alumni-empty">
-                            <span className="alumni-empty-icon">📭</span>
-                            <p>No alumni job posts yet. Check back soon!</p>
+                        <div className="intern-empty">
+                            <span className="intern-empty-icon">🎒</span>
+                            <p className="intern-empty-title">No alumni internships yet</p>
+                            <p className="intern-empty-sub">Alumni will post internship opportunities here. Check back soon!</p>
                         </div>
                     )}
                 </section>
 
                 {/* ── SerpAPI Search ─────────────────────────────── */}
-                <div className="jobs-divider"><span>Search External Job Listings</span></div>
+                <div className="jobs-divider"><span>Search External Internship Listings</span></div>
 
                 <section className="search-section glass">
                     <form onSubmit={handleSearch} className="job-search-form">
                         <div className="input-group">
                             <FontAwesomeIcon icon={faSearch} />
                             <input
-                                placeholder="Job title, skills..."
+                                placeholder="Internship role, skills..."
                                 value={search.query}
                                 onChange={(e) => setSearch({ ...search, query: e.target.value })}
                             />
@@ -193,18 +179,18 @@ const Jobs = () => {
                         <div className="input-group">
                             <FontAwesomeIcon icon={faMapMarkerAlt} />
                             <input
-                                placeholder="Location (e.g. Remote, NYC)"
+                                placeholder="Location (e.g. Remote, Bengaluru)"
                                 value={search.location}
                                 onChange={(e) => setSearch({ ...search, location: e.target.value })}
                             />
                         </div>
-                        <button type="submit" className="search-btn">Search Jobs</button>
+                        <button type="submit" className="search-btn intern-search-btn">Search Internships</button>
                     </form>
                 </section>
 
                 {recommendations.length > 0 && (
                     <section className="recommendations-section">
-                        <h3><FontAwesomeIcon icon={faLightbulb} /> Recommended for You</h3>
+                        <h3><FontAwesomeIcon icon={faLightbulb} /> Recommended Internships for You</h3>
                         <div className="rec-grid">
                             {recommendations.map((job, idx) => (
                                 <div key={idx} className="rec-card glass-card">
@@ -221,7 +207,7 @@ const Jobs = () => {
 
                 <main className="jobs-list">
                     {loading ? (
-                        <div className="loading-state">Scouring the web for the best job fits...</div>
+                        <div className="loading-state">Searching for the best internship opportunities...</div>
                     ) : jobs.length > 0 ? (
                         jobs.map((job, idx) => (
                             <div key={idx} className="job-card glass-card">
@@ -239,7 +225,7 @@ const Jobs = () => {
                             </div>
                         ))
                     ) : (
-                        <div className="empty-state">No jobs found. Try a different search!</div>
+                        <div className="empty-state">No internships found. Try adjusting your search!</div>
                     )}
                 </main>
             </div>
@@ -247,4 +233,4 @@ const Jobs = () => {
     );
 };
 
-export default Jobs;
+export default Internships;

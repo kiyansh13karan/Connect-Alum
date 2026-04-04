@@ -22,6 +22,7 @@ import MessagesView from './pages/Student/MessagesView';
 import Appointments from './pages/Student/Appointments';
 import StudentEvents from './pages/Student/StudentEvents';
 import LinkedInFeed from './pages/Student/LinkedInFeed';
+import Internships from './pages/Student/Internships';
 
 // New Alumni Dashboard Pages
 import ProfileSection   from './pages/Alumni/ProfileSection';
@@ -62,7 +63,7 @@ const App = () => {
             <Route index element={<StudentDashboardOverview />} />
             <Route path="dashboard"    element={<StudentDashboardOverview />} />
             <Route path="opportunities" element={<Jobs />} />
-            <Route path="internships"  element={<Jobs />} />
+            <Route path="internships"  element={<Internships />} />
             <Route path="mentors"      element={<MentorsBrowser />} />
             <Route path="messages"     element={<MessagesView />} />
             <Route path="appointments" element={<Appointments />} />

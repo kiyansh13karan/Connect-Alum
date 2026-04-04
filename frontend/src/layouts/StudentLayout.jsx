@@ -8,14 +8,14 @@ const StudentLayout = () => {
     const location = useLocation();
 
     const navItems = [
-        { to: '/student/dashboard', label: 'Dashboard' },
-        { to: '/student/internships', label: 'Internships' },
-        { to: '/student/opportunities', label: 'Jobs' },
-        { to: '/student/mentors', label: 'Mentors' },
-        { to: '/student/messages', label: 'Messages' },
-        { to: '/student/appointments', label: 'Appointments' },
-        { to: '/student/events', label: 'Events' },
-        { to: '/student/feed', label: 'LinkedIn Feed' },
+        { to: '/student/dashboard',    label: '🏠 Dashboard' },
+        { to: '/student/opportunities', label: '💼 Jobs' },
+        { to: '/student/internships',  label: '🎓 Internships' },
+        { to: '/student/mentors',      label: '👨‍💼 Mentors' },
+        { to: '/student/messages',     label: '💬 Messages' },
+        { to: '/student/appointments', label: '📅 Appointments' },
+        { to: '/student/events',       label: '🌐 Events' },
+        { to: '/student/feed',         label: '📰 LinkedIn Feed' },
     ];
 
     return (
