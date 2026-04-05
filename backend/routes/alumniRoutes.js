@@ -4,6 +4,7 @@ import roleMiddleware from "../middleware/roleMiddleware.js";
 import messageModel from "../models/Message.js";
 import mentorshipRequestModel from "../models/MentorshipRequest.js";
 import userModel from "../models/userModel.js";
+import appointmentModel from "../models/Appointment.js";
 
 const router = express.Router();
 
@@ -24,6 +25,54 @@ router.post("/post-opportunity", (req, res) => {
 router.post("/schedule-event", (req, res) => {
     const { name, date, link } = req.body;
     res.json({ success: true, message: "Event scheduled successfully" });
+});
+
+// ── Mentorship Request routes (alumni side) ───────────────
+
+/**
+ * GET /api/alumni-role/student-requests
+ * Returns all mentorship requests sent to this alumni.
+ */
+router.get("/student-requests", async (req, res) => {
+    try {
+        const alumniId = req.userId;
+        const requests = await mentorshipRequestModel
+            .find({ alumniId })
+            .populate("studentId", "name email currentRole company")
+            .sort({ createdAt: -1 });
+        res.json({ success: true, requests });
+    } catch (error) {
+        console.error("Error fetching student requests:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * PATCH /api/alumni-role/student-requests/:id
+ * Alumni accepts or rejects a mentorship request.
+ */
+router.patch("/student-requests/:id", async (req, res) => {
+    try {
+        const alumniId = req.userId;
+        const { id } = req.params;
+        const { status } = req.body; // "accepted" | "rejected"
+
+        if (!["accepted", "rejected"].includes(status)) {
+            return res.status(400).json({ success: false, message: "Status must be 'accepted' or 'rejected'." });
+        }
+
+        const request = await mentorshipRequestModel.findOne({ _id: id, alumniId });
+        if (!request) {
+            return res.status(404).json({ success: false, message: "Request not found." });
+        }
+
+        request.status = status;
+        await request.save();
+        res.json({ success: true, message: `Request ${status}.`, request });
+    } catch (error) {
+        console.error("Error updating student request:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
 // ── Message routes (alumni side) ─────────────────────────
@@ -151,6 +200,61 @@ router.post("/message", async (req, res) => {
         res.status(201).json({ success: true, message: "Message sent.", data: newMessage });
     } catch (error) {
         console.error("Error sending message:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ── Appointment routes (alumni side) ─────────────────────────
+
+/**
+ * GET /api/alumni-role/appointments
+ * Returns all appointment requests sent to this alumni.
+ */
+router.get("/appointments", async (req, res) => {
+    try {
+        const alumniId = req.userId;
+        const appointments = await appointmentModel
+            .find({ alumniId })
+            .populate("studentId", "name email")
+            .sort({ createdAt: -1 });
+        res.json({ success: true, appointments });
+    } catch (error) {
+        console.error("Error fetching alumni appointments:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * PATCH /api/alumni-role/appointments/:id
+ * Alumni approves or rejects an appointment.
+ * On approval, a Jitsi meeting link is auto-generated using the appointment ID.
+ */
+router.patch("/appointments/:id", async (req, res) => {
+    try {
+        const alumniId = req.userId;
+        const { id } = req.params;
+        const { status } = req.body; // "approved" | "rejected"
+
+        if (!["approved", "rejected"].includes(status)) {
+            return res.status(400).json({ success: false, message: "Invalid status. Must be 'approved' or 'rejected'." });
+        }
+
+        const appointment = await appointmentModel.findOne({ _id: id, alumniId });
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: "Appointment not found or not owned by you." });
+        }
+
+        appointment.status = status;
+
+        // Auto-generate a Jitsi Meet room link on approval
+        if (status === "approved") {
+            appointment.meetingLink = `https://meet.jit.si/connectalum-${appointment._id}`;
+        }
+
+        await appointment.save();
+        res.json({ success: true, message: `Appointment ${status}.`, appointment });
+    } catch (error) {
+        console.error("Error updating appointment:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

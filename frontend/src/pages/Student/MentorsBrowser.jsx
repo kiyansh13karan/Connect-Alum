@@ -143,25 +143,47 @@ const MentorsBrowser = () => {
     const [connections, setConnections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [currentUser, setCurrentUser] = useState(null);
+    const [apiError, setApiError] = useState(null);
 
     useEffect(() => {
-        const fetchMentors = async () => {
-            try {
-                const res = await axios.get(url + '/api/student/mentors', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (res.data.success) {
-                    setMentors(res.data.mentors);
-                    setConnections(res.data.connections);
-                }
-            } catch (error) {
-                console.error('Error fetching mentors:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        fetchCurrentUser();
         fetchMentors();
+
+        // Poll connection status every 10s so 'accepted' connections appear automatically
+        const interval = setInterval(() => {
+            fetchMentors();
+        }, 10000);
+        return () => clearInterval(interval);
     }, [url, token]);
+
+    const fetchCurrentUser = async () => {
+        try {
+            const res = await axios.get(url + '/api/user/profile', { headers: { Authorization: `Bearer ${token}` } });
+            if (res.data.success) setCurrentUser(res.data.user);
+        } catch (err) { console.error('Profile fetch error:', err); }
+    };
+
+    const fetchMentors = async () => {
+        try {
+            setApiError(null);
+            const res = await axios.get(url + '/api/student/mentors', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.data.success) {
+                setMentors(res.data.mentors);
+                setConnections(res.data.connections);
+            }
+        } catch (error) {
+            if (error.response?.status === 403) {
+                setApiError('role_mismatch');
+            } else {
+                console.error('Error fetching mentors:', error);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleConnect = async (alumniId) => {
         try {
@@ -221,6 +243,34 @@ const MentorsBrowser = () => {
                     Find and connect with experienced alumni to guide your career journey.
                 </p>
             </div>
+
+            {/* ── Session identity / error banner ── */}
+            {apiError === 'role_mismatch' && (
+                <div style={{
+                    padding: '14px 18px', borderRadius: '12px',
+                    backgroundColor: '#fef2f2', border: '1px solid #fecaca',
+                    display: 'flex', gap: '12px', alignItems: 'flex-start',
+                }}>
+                    <span style={{ fontSize: '20px' }}>⚠️</span>
+                    <div>
+                        <strong style={{ color: '#b91c1c', fontSize: '14px' }}>
+                            Wrong account type! You are logged in as an <em>alumni</em> but are viewing the Student portal.
+                        </strong>
+                        <p style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0 0' }}>
+                            Please <strong>log out</strong> and log back in using a <strong>Student</strong> account to see alumni and send connection requests.
+                        </p>
+                    </div>
+                </div>
+            )}
+            {currentUser && currentUser.role === 'student' && (
+                <div style={{
+                    padding: '10px 16px', borderRadius: '10px',
+                    backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0',
+                    fontSize: '13px', color: '#15803d', display: 'flex', alignItems: 'center', gap: '8px',
+                }}>
+                    ✅ Logged in as <strong>{currentUser.name}</strong> ({currentUser.email})
+                </div>
+            )}
 
             {/* ── Quick Stats ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>

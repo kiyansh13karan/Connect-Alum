@@ -31,7 +31,8 @@ import Opportunities    from './pages/Alumni/Opportunities';
 import Messages         from './pages/Alumni/Messages';
 import Events           from './pages/Alumni/Events';
 import Analytics        from './pages/Alumni/Analytics';
-import Settings         from './pages/Alumni/Settings';
+import Settings              from './pages/Alumni/Settings';
+import AlumniAppointments   from './pages/Alumni/AlumniAppointments';
 
 const App = () => {
   const { showLogin, setShowLogin } = useContext(StoreContext);
@@ -82,6 +83,7 @@ const App = () => {
             <Route path="events"           element={<Events />} />
             <Route path="analytics"        element={<Analytics />} />
             <Route path="settings"         element={<Settings />} />
+            <Route path="appointments"     element={<AlumniAppointments />} />
             {/* Legacy routes kept for backward compat */}
             <Route path="post-opportunity" element={<Opportunities />} />
           </Route>

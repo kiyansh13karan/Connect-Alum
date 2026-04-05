@@ -5,14 +5,15 @@ import { StoreContext } from '../context/StoreContext';
 import './AlumniLayout.css';
 
 const navLinks = [
-    { to: '/alumni/dashboard',  label: 'Dashboard',         icon: '⚡' },
-    { to: '/alumni/profile',    label: 'My Profile',         icon: '👤' },
-    { to: '/alumni/requests',   label: 'Student Requests',   icon: '🤝' },
-    { to: '/alumni/opportunities', label: 'Opportunities',   icon: '📢' },
-    { to: '/alumni/messages',   label: 'Messages',           icon: '💬' },
-    { to: '/alumni/events',     label: 'Events',             icon: '📅' },
-    { to: '/alumni/analytics',  label: 'Analytics',          icon: '📊' },
-    { to: '/alumni/settings',   label: 'Settings',           icon: '⚙️' },
+    { to: '/alumni/dashboard',      label: 'Dashboard',           icon: '⚡' },
+    { to: '/alumni/profile',        label: 'My Profile',           icon: '👤' },
+    { to: '/alumni/requests',       label: 'Student Requests',     icon: '🤝' },
+    { to: '/alumni/appointments',   label: 'Appointments',         icon: '📅' },
+    { to: '/alumni/opportunities',  label: 'Opportunities',        icon: '📢' },
+    { to: '/alumni/messages',       label: 'Messages',             icon: '💬' },
+    { to: '/alumni/events',         label: 'Events',               icon: '🗓️' },
+    { to: '/alumni/analytics',      label: 'Analytics',            icon: '📊' },
+    { to: '/alumni/settings',       label: 'Settings',             icon: '⚙️' },
 ];
 
 const AlumniLayout = () => {
