@@ -113,7 +113,7 @@ connectalum/
 <br/>
 
 ### 3. Mentorship & Real-Time Messaging Interface
-<img src="" alt="Messaging Interface Placeholder" width="800"/>
+<img src="https://github.com/kiyansh13karan/Connect-Alum/blob/main/mentorship_ss.png?raw=true" alt="Messaging Interface Placeholder" width="800"/>
 <br/>
 
 ### 4. Live Notifications System
