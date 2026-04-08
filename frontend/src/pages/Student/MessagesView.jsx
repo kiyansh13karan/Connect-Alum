@@ -30,6 +30,15 @@ const MessagesView = () => {
     useEffect(() => { if (activeContact) fetchMessages(activeContact._id); }, [activeContact]);
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+    // Poll for new messages every 5 seconds when a conversation is open
+    useEffect(() => {
+        if (!activeContact) return;
+        const interval = setInterval(() => {
+            fetchMessages(activeContact._id);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [activeContact]);
+
     const fetchContacts = async () => {
         try {
             const res = await axios.get(url + '/api/student/connections', { headers: { Authorization: `Bearer ${token}` } });

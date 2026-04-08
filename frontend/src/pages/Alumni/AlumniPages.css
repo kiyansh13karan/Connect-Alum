@@ -1276,3 +1276,365 @@
 @media (max-width: 768px) {
     .ap-events-grid { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   ADVANCED ANIMATIONS & MICRO-INTERACTIONS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Shimmer skeleton ──────────────────────────────── */
+@keyframes apShimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+}
+
+/* ── Fade + slide in for cards ─────────────────────── */
+@keyframes apSlideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes apFadeInScale {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Bar chart grow from bottom ────────────────────── */
+@keyframes apBarGrow {
+    from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+    to   { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+}
+
+/* Apply entrance animation to analytics cards */
+.ap-analytics-card {
+    animation: apFadeInScale 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Bar grow animation */
+.ap-bar {
+    animation: apBarGrow 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Activity items slide in */
+.ap-activity-item {
+    animation: apSlideInUp 0.4s ease both;
+}
+
+/* ── Glassmorphism card variant ────────────────────── */
+.ap-glass-card {
+    background: rgba(255, 255, 255, 0.75);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Glow pulse for active elements ────────────────── */
+@keyframes apGlowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.4); }
+    50%       { box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+}
+
+.ap-btn-primary:focus-visible {
+    animation: apGlowPulse 1.5s ease infinite;
+}
+
+/* ── Analytics bar chart improvements ─────────────── */
+.ap-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+    padding: 1rem 0.5rem 0;
+}
+
+.ap-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+}
+
+.ap-bar-stack {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 2px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ap-bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: opacity 0.2s ease;
+    min-height: 0;
+}
+
+.ap-bar:hover { opacity: 0.8; cursor: pointer; }
+
+.ap-bar-blue   { background: linear-gradient(180deg, #60a5fa, #2563eb); }
+.ap-bar-violet { background: linear-gradient(180deg, #a78bfa, #7c3aed); }
+
+.ap-bar-day {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.ap-bar-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.ap-legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.ap-legend-blue   { background: #2563eb; }
+.ap-legend-violet { background: #7c3aed; }
+
+/* ── Analytics mini stat cards ─────────────────────── */
+.ap-analytics-mini-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0.85rem 1.25rem;
+    flex: 1;
+    min-width: 140px;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.ap-analytics-mini-card:hover {
+    border-color: #c7d2fe;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99,102,241,0.1);
+}
+
+.ap-analytics-mini-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.ap-analytics-mini-val {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.ap-analytics-mini-lbl {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 2px 0 0 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Analytics existing card enhancements ──────────── */
+.ap-analytics-body {
+    flex: 1;
+}
+
+.ap-analytics-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+    margin: 0 0 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.ap-analytics-value {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.ap-analytics-delta {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #10b981;
+    margin-top: 4px;
+    display: block;
+}
+
+.ap-analytics-icon {
+    font-size: 1.75rem;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.ap-analytics-card:hover .ap-analytics-icon {
+    transform: scale(1.15) rotate(-5deg);
+}
+
+/* Color variants with subtle gradient backgrounds */
+.ap-analytics-blue   { background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe; }
+.ap-analytics-violet { background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-color: #ddd6fe; }
+.ap-analytics-amber  { background: linear-gradient(135deg, #fffbeb, #fef3c7); border-color: #fde68a; }
+.ap-analytics-green  { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #bbf7d0; }
+
+/* ── Activity feed ─────────────────────────────────── */
+.ap-activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.ap-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid #f8fafc;
+    transition: background 0.2s ease;
+}
+
+.ap-activity-item:last-child { border-bottom: none; }
+
+.ap-activity-item:hover {
+    background: #f9fafb;
+    margin: 0 -0.5rem;
+    padding: 0.85rem 0.5rem;
+    border-radius: 10px;
+}
+
+.ap-activity-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.ap-activity-item:hover .ap-activity-icon {
+    transform: scale(1.1);
+}
+
+.ap-activity-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.ap-activity-text p {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ap-activity-time {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* ── Page-level entrance ───────────────────────────── */
+.ap-page {
+    animation: apSlideInUp 0.35s ease both;
+}
+
+/* ── Card hover elevation ──────────────────────────── */
+.ap-card {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.ap-card:hover {
+    box-shadow: 0 12px 36px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+/* ── Request card micro interactions ──────────────── */
+.ap-req-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Premium scrollbar ─────────────────────────────── */
+.ap-contact-list::-webkit-scrollbar,
+.ap-chat-body::-webkit-scrollbar {
+    width: 4px;
+}
+.ap-contact-list::-webkit-scrollbar-track,
+.ap-chat-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+.ap-contact-list::-webkit-scrollbar-thumb,
+.ap-chat-body::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 100px;
+}
+.ap-contact-list::-webkit-scrollbar-thumb:hover,
+.ap-chat-body::-webkit-scrollbar-thumb:hover {
+    background: #c7d2fe;
+}
+
+/* ── Gradient text utility ─────────────────────────── */
+.ap-gradient-text {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Notification badge for sidebar ──────────────────── */
+.ap-sidebar-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    border-radius: 100px;
+    margin-left: auto;
+    animation: apGlowPulse 2s ease infinite;
+}
+
+/* ── Focus ring system ─────────────────────────────── */
+.ap-input:focus,
+.ap-chat-input:focus,
+.ap-msg-search:focus {
+    outline: none;
+}
+
+/* ── Responsive tweaks ─────────────────────────────── */
+@media (max-width: 768px) {
+    .ap-analytics-grid { grid-template-columns: 1fr 1fr; }
+    .ap-messages-layout { grid-template-columns: 1fr; height: auto; }
+    .ap-analytics-strip { flex-direction: column; }
+    .ap-analytics-mini-card { min-width: unset; }
+}
+
+@media (max-width: 480px) {
+    .ap-analytics-grid { grid-template-columns: 1fr; }
+    .ap-analytics-value { font-size: 1.5rem; }
+}
+

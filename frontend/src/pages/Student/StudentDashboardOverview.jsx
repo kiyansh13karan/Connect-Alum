@@ -173,6 +173,43 @@ const StudentDashboardOverview = () => {
     const [latestAlumniJobs, setLatestAlumniJobs] = useState([]);
     const [upcomingEvents, setUpcomingEvents]     = useState([]);
     const [name, setName] = useState('Student');
+    const [notifications, setNotifications] = useState([]);
+    const [markingRead, setMarkingRead]     = useState(null);
+
+    /* — Fetch notifications — */
+    const fetchNotifications = async () => {
+        if (!token) return;
+        try {
+            const res = await axios.get(url + '/api/notifications', { headers: { Authorization: `Bearer ${token}` } });
+            if (res.data.success) setNotifications(res.data.notifications || []);
+        } catch { /* silent */ }
+    };
+
+    const markRead = async (id) => {
+        setMarkingRead(id);
+        try {
+            await axios.post(url + '/api/notifications/read', { notificationId: id }, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+        } catch { /* silent */ } finally { setMarkingRead(null); }
+    };
+
+    const markAllRead = async () => {
+        const unread = notifications.filter(n => !n.isRead);
+        await Promise.all(unread.map(n =>
+            axios.post(url + '/api/notifications/read', { notificationId: n._id }, {
+                headers: { Authorization: `Bearer ${token}` },
+            }).catch(() => {})
+        ));
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 15000);
+        return () => clearInterval(interval);
+    }, [token]);
 
     useEffect(() => {
         const fetchOverview = async () => {
@@ -213,6 +250,8 @@ const StudentDashboardOverview = () => {
         if (token) fetchOverview();
     }, [url, token]);
 
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
     return (
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -226,6 +265,58 @@ const StudentDashboardOverview = () => {
                 </p>
             </div>
 
+            {/* ── Notifications Banner ── */}
+            {notifications.filter(n => !n.isRead).length > 0 && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #eff6ff, #eef2ff)',
+                    border: '1px solid #c7d2fe',
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#1e40af', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            🔔 Notifications
+                            <span style={{ fontSize: '11px', fontWeight: 700, background: '#2563eb', color: '#fff', padding: '2px 8px', borderRadius: '100px' }}>
+                                {notifications.filter(n => !n.isRead).length} new
+                            </span>
+                        </h2>
+                        <button
+                            onClick={markAllRead}
+                            style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                            Mark all read
+                        </button>
+                    </div>
+                    {notifications.filter(n => !n.isRead).slice(0, 4).map(n => (
+                        <div
+                            key={n._id}
+                            onClick={() => markRead(n._id)}
+                            style={{
+                                display: 'flex', alignItems: 'flex-start', gap: '12px',
+                                background: 'white', border: '1px solid #e0e7ff',
+                                borderRadius: '10px', padding: '12px 14px',
+                                cursor: 'pointer',
+                                transition: 'box-shadow 0.2s, transform 0.2s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(99,102,241,0.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        >
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb', flexShrink: 0, marginTop: '5px' }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#1f2937', margin: '0 0 3px 0', lineHeight: 1.4 }}>{n.message}</p>
+                                <p style={{ fontSize: '11px', color: '#9ca3af', margin: 0 }}>
+                                    {new Date(n.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    {' · '}Click to dismiss
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {/* ── Stats Row ── */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
                 <StatCard to="/student/mentors"      icon={faUserTie}      value={stats.connections}   label="Active Mentors"  iconBg="#eff6ff" iconColor="#2563eb" borderColor="#bfdbfe" />
@@ -233,6 +324,7 @@ const StudentDashboardOverview = () => {
                 <StatCard to="/student/opportunities" icon={faBriefcase}  value={alumniJobCount}       label="Alumni Jobs"     iconBg="#eef2ff" iconColor="#4f46e5" borderColor="#c7d2fe" />
                 <StatCard to="/student/internships"  icon={faLaptopCode}   value={alumniInternCount}    label="Internships"     iconBg="#f5f3ff" iconColor="#7c3aed" borderColor="#ddd6fe" />
             </div>
+
 
             {/* ── Row 2: Quick Actions | Upcoming Appointments ── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
