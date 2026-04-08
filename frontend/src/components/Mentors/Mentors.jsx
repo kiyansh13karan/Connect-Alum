@@ -7,7 +7,8 @@ const Mentors = () => {
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/mentors")
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+    fetch(`${backendUrl}/api/mentors`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("Server error while fetching mentors");

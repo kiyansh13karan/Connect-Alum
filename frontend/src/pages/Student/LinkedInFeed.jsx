@@ -7,7 +7,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { faLinkedin } from '@fortawesome/free-brands-svg-icons';
 
-const BACKEND = 'http://localhost:4000';
+const BACKEND = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000';
 
 /* ── Mock alumni posts (ConnectAlum network) ─────────────── */
 const ALUMNI_POSTS = [

@@ -10,7 +10,8 @@ const Jobs = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await axios.get("http://localhost:4000/api/jobs", {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+        const response = await axios.get(`${backendUrl}/api/jobs`, {
           params: { query: "Software Engineer", location: "New York" },
         });
         setJobs(response.data);

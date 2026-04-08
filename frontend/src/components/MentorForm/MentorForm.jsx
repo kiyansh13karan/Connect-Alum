@@ -35,7 +35,8 @@ const MentorForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:4000/api/mentors/add", {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+      const response = await fetch(`${backendUrl}/api/mentors/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

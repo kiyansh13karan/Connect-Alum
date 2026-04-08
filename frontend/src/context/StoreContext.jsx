@@ -5,7 +5,7 @@ export const StoreContext = createContext(null);
 
 const StoreContextProvider = (props) => {
 
-    const url = "http://localhost:4000";
+    const url = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
     const [token, setToken] = useState("");
     const [role, setRole] = useState(localStorage.getItem("role") || "");
 
