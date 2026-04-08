@@ -43,10 +43,24 @@ Unlike simple directories, ConnectAlum is built with a **real-world, robust arch
 
 ## 🛠️ Tech Stack
 
+<div align="center">
+  <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express.js" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+</div>
+<div align="center">
+  <img src="https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E" alt="JavaScript" />
+  <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" alt="CSS3" />
+  <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5" />
+  <img src="https://img.shields.io/badge/FontAwesome-339AE9?style=for-the-badge&logo=fontawesome&logoColor=white" alt="FontAwesome" />
+</div>
+
+<br/>
+
 ### Frontend Architecture
 * **Framework:** React.js
 * **Styling & UI:** Vanilla CSS with custom utility components, Glassmorphism design principles, advanced `@keyframes` animations.
-* **Icons:** FontAwesome
 * **State Management:** React Context API
 
 ### Backend Architecture
@@ -54,6 +68,35 @@ Unlike simple directories, ConnectAlum is built with a **real-world, robust arch
 * **Database:** MongoDB (via Mongoose)
 * **Authentication:** JWT (JSON Web Tokens) & bcryptjs for secure password hashing.
 * **Security:** Role-based access control middleware verifying 'student' vs 'alumni' API access.
+
+---
+
+## 📂 Repository Structure
+
+```text
+connectalum/
+├── backend/                  # Node.js + Express Backend
+│   ├── config/               # Database and environment configurations
+│   ├── controllers/          # Business logic and request handlers (e.g., users, messaging)
+│   ├── middleware/           # Auth and role-based access control filters
+│   ├── models/               # Mongoose schemas (User, Message, Appointment, etc)
+│   ├── routes/               # API route definitions
+│   └── server.js             # Main server entry point
+│
+├── frontend/                 # React.js Frontend
+│   ├── public/               # Static assets
+│   └── src/
+│       ├── assets/           # Images, SVGs, and global styles
+│       ├── components/       # Reusable UI components (Navbar, Cards, Buttons)
+│       ├── context/          # React Context providers (Global state)
+│       ├── layouts/          # Page wrappers (AlumniLayout, StudentLayout)
+│       ├── pages/            # Main views (Dashboard, Analytics, Messages, Profile)
+│       ├── App.jsx           # Main React component
+│       └── main.jsx          # Frontend entry point
+│
+├── .gitignore
+└── README.md
+```
 
 ---
 
