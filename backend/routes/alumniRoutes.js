@@ -5,6 +5,8 @@ import messageModel from "../models/Message.js";
 import mentorshipRequestModel from "../models/MentorshipRequest.js";
 import userModel from "../models/userModel.js";
 import appointmentModel from "../models/Appointment.js";
+import { createNotification } from "../controllers/notificationController.js";
+import jobPostModel from "../models/jobPostModel.js";
 
 const router = express.Router();
 
@@ -57,8 +59,8 @@ router.patch("/student-requests/:id", async (req, res) => {
         const { id } = req.params;
         const { status } = req.body; // "accepted" | "rejected"
 
-        if (!["accepted", "rejected"].includes(status)) {
-            return res.status(400).json({ success: false, message: "Status must be 'accepted' or 'rejected'." });
+        if (!["accepted", "rejected", "pending"].includes(status)) {
+            return res.status(400).json({ success: false, message: "Invalid status." });
         }
 
         const request = await mentorshipRequestModel.findOne({ _id: id, alumniId });
@@ -68,6 +70,26 @@ router.patch("/student-requests/:id", async (req, res) => {
 
         request.status = status;
         await request.save();
+
+        // Notify the student of the decision
+        const alumni = await userModel.findById(alumniId).select("name");
+        const alumniName = alumni?.name || "the alumni";
+        if (status === "accepted") {
+            await createNotification(
+                request.studentId,
+                "mentorship",
+                `🎉 ${alumniName} accepted your mentorship request! You can now message and book appointments.`,
+                "/student/messages"
+            );
+        } else if (status === "rejected") {
+            await createNotification(
+                request.studentId,
+                "mentorship",
+                `${alumniName} has declined your mentorship request.`,
+                "/student/mentors"
+            );
+        }
+
         res.json({ success: true, message: `Request ${status}.`, request });
     } catch (error) {
         console.error("Error updating student request:", error);
@@ -200,6 +222,110 @@ router.post("/message", async (req, res) => {
         res.status(201).json({ success: true, message: "Message sent.", data: newMessage });
     } catch (error) {
         console.error("Error sending message:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ── Analytics endpoint (alumni side) ────────────────────────
+
+/**
+ * GET /api/alumni-role/analytics
+ * Returns real statistics for this alumni's dashboard.
+ */
+router.get("/analytics", async (req, res) => {
+    try {
+        const alumniId = req.userId;
+
+        // Parallel DB queries
+        const [allRequests, allMessages, allAppointments, jobPosts] = await Promise.all([
+            mentorshipRequestModel.find({ alumniId })
+                .populate("studentId", "name email")
+                .sort({ createdAt: -1 }),
+            messageModel.find({ $or: [{ sender: alumniId }, { receiver: alumniId }] })
+                .sort({ timestamp: -1 }),
+            appointmentModel.find({ alumniId }).sort({ createdAt: -1 }),
+            jobPostModel.find({ postedBy: alumniId }).sort({ createdAt: -1 }),
+        ]);
+
+        const studentsConnected = allRequests.filter(r => r.status === "accepted").length;
+        const pendingRequests = allRequests.filter(r => r.status === "pending").length;
+        const messagesCount = allMessages.length;
+        const opportunitiesCount = jobPosts.length;
+        const appointmentsCount = allAppointments.length;
+
+        // Build recent activity feed (last 10 items across all types)
+        const activity = [];
+
+        allRequests.slice(0, 5).forEach(r => {
+            const name = r.studentId?.name || "A student";
+            if (r.status === "accepted") {
+                activity.push({ icon: "✅", text: `${name} connection accepted`, time: r.updatedAt, color: "#10b981" });
+            } else if (r.status === "pending") {
+                activity.push({ icon: "🆕", text: `New connection request from ${name}`, time: r.createdAt, color: "#6366f1" });
+            } else {
+                activity.push({ icon: "❌", text: `Request from ${name} declined`, time: r.updatedAt, color: "#ef4444" });
+            }
+        });
+
+        allMessages.slice(0, 3).forEach(m => {
+            const isSender = m.sender.toString() === alumniId;
+            activity.push({
+                icon: "💬",
+                text: isSender ? "You sent a message" : "New message received",
+                time: m.timestamp,
+                color: "#8b5cf6"
+            });
+        });
+
+        allAppointments.slice(0, 3).forEach(a => {
+            activity.push({
+                icon: "📅",
+                text: `Appointment ${a.status} – ${a.topic || "Session"}`,
+                time: a.createdAt,
+                color: "#f59e0b"
+            });
+        });
+
+        jobPosts.slice(0, 2).forEach(j => {
+            activity.push({
+                icon: "📢",
+                text: `You posted "${j.title}" at ${j.company || ""}`,
+                time: j.createdAt,
+                color: "#3b82f6"
+            });
+        });
+
+        // Sort by time desc, take top 8
+        activity.sort((a, b) => new Date(b.time) - new Date(a.time));
+        const recentActivity = activity.slice(0, 8);
+
+        // Weekly breakdown (last 7 days) for requests
+        const weeklyData = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dayStr = d.toLocaleDateString("en-US", { weekday: "short" });
+            const startOfDay = new Date(d.setHours(0,0,0,0));
+            const endOfDay = new Date(d.setHours(23,59,59,999));
+            const dayRequests = allRequests.filter(r => {
+                const c = new Date(r.createdAt);
+                return c >= startOfDay && c <= endOfDay;
+            }).length;
+            const dayMessages = allMessages.filter(m => {
+                const t = new Date(m.timestamp);
+                return t >= startOfDay && t <= endOfDay;
+            }).length;
+            weeklyData.push({ day: dayStr, requests: dayRequests, messages: dayMessages });
+        }
+
+        res.json({
+            success: true,
+            stats: { studentsConnected, pendingRequests, messagesCount, opportunitiesCount, appointmentsCount },
+            recentActivity,
+            weeklyData,
+        });
+    } catch (error) {
+        console.error("Error fetching alumni analytics:", error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

@@ -85,9 +85,9 @@ const getProfile = async (req, res) => {
 // **🔹 Update User Profile**
 const updateProfile = async (req, res) => {
     try {
-        const { name, bio, skills, linkedin, github, experience, company } = req.body;
+        const { name, bio, skills, linkedin, github, experience, company, currentRole, location } = req.body;
         await userModel.findByIdAndUpdate(req.userId, {
-            name, bio, skills, linkedin, github, experience, company
+            name, bio, skills, linkedin, github, experience, company, currentRole, location
         });
         res.json({ success: true, message: "Profile Updated" });
     } catch (error) {
