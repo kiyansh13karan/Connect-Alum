@@ -117,7 +117,7 @@ connectalum/
 <br/>
 
 ### 4. Live Notifications System
-<img src="" alt="Live Notifications Placeholder" width="800"/>
+<img src="https://github.com/kiyansh13karan/Connect-Alum/blob/main/live_notification_ss.png?raw=true" alt="Live Notifications Placeholder" width="800"/>
 <br/>
 
 ---
