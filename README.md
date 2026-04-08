@@ -105,7 +105,7 @@ connectalum/
 *(Add your screenshots here)*
 
 ### 1. Student Dashboard
-<img src="" alt="Student Dashboard Screenshot Placeholder" width="800"/>
+<img src="https://github.com/kiyansh13karan/Connect-Alum/blob/main/student_dashboard_ss.png?raw=true" alt="Student Dashboard Screenshot Placeholder" width="800"/>
 <br/>
 
 ### 2. Alumni Analytics Dashboard
