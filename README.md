@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="" alt="ConnectAlum Logo or Hero Banner" width="800"/>
+  <img src="./frontend/public/readme-banner.png" alt="ConnectAlum hero banner" width="900"/>
   <h1>🎓 ConnectAlum</h1>
   <p><strong>Building meaningful connections in tech education bridging the gap between Students and Alumni</strong></p>
   
@@ -177,9 +177,9 @@ To get a local copy up and running, follow these steps.
 
 Hello! I am Karan Nayal, the developer behind ConnectAlum. I built this platform out of a passion for connecting aspiring students with established industry professionals. My goal was to create not just functional software, but a polished, secure, and highly responsive ecosystem that looks and feels like modern SaaS products.
 
-* **GitHub:** [Karan Nayal](https://github.com/kiyansh13karan) 
-* **LinkedIn:** [Karan Nayal](https://www.linkedin.com/in/karan-nayal-054981286/) 
-* **Email:** *karannayalkannu1982@gmail.com*
+* **GitHub : ** [Karan Nayal](https://github.com/kiyansh13karan) 
+* **LinkedIn : ** [Karan Nayal](https://www.linkedin.com/in/karan-nayal-054981286/) 
+* **Email : ** [karannayalkannu1982@gmail.com](mailto:[EMAIL_ADDRESS]) 
 
 <div align="center">
   <p>⭐ If you found this project helpful or interesting, please consider starring the repository! ⭐</p>
