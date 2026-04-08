@@ -109,7 +109,7 @@ connectalum/
 <br/>
 
 ### 2. Alumni Analytics Dashboard
-<img src="" alt="Alumni Analytics Screenshot Placeholder" width="800"/>
+<img src="https://github.com/kiyansh13karan/Connect-Alum/blob/main/alumini_analytics_dashboard.png?raw=true" alt="Alumni Analytics Screenshot Placeholder" width="800"/>
 <br/>
 
 ### 3. Mentorship & Real-Time Messaging Interface
