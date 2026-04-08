@@ -177,8 +177,8 @@ To get a local copy up and running, follow these steps.
 
 Hello! I am Karan Nayal, the developer behind ConnectAlum. I built this platform out of a passion for connecting aspiring students with established industry professionals. My goal was to create not just functional software, but a polished, secure, and highly responsive ecosystem that looks and feels like modern SaaS products.
 
-* **GitHub:** [@karannayal](https://github.com/karannayal) *(Update with your actual GitHub username)*
-* **LinkedIn:** [Karan Nayal](https://linkedin.com/in/karannayal) *(Update with your actual LinkedIn URL)*
+* **GitHub:** [Karan Nayal](https://github.com/kiyansh13karan) 
+* **LinkedIn:** [Karan Nayal](https://github.com/kiyansh13karan) 
 * **Email:** *Add your email here*
 
 <div align="center">
