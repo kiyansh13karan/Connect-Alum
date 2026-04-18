@@ -250,6 +250,100 @@ const AlumniAppointments = () => {
                                             📝 {app.description}
                                         </p>
                                     )}
+
+                                    {/* ── Resume attached by student ── */}
+                                    {app.resumeUrl && (
+                                        <div style={{
+                                            marginTop: '4px',
+                                            padding: '10px 14px',
+                                            backgroundColor: '#eff6ff',
+                                            border: '1px solid #bfdbfe',
+                                            borderRadius: '10px',
+                                            display: 'flex', alignItems: 'center', gap: '10px',
+                                        }}>
+                                            <span style={{ fontSize: '20px', flexShrink: 0 }}>
+                                                {app.resumeName?.endsWith('.pdf') ? '📄' : '📝'}
+                                            </span>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#1d4ed8' }}>
+                                                    Student's Resume
+                                                </p>
+                                                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {app.resumeName || 'resume'}
+                                                </p>
+                                            </div>
+                                            <a
+                                                href={app.resumeUrl}
+                                                download={app.resumeName || 'resume'}
+                                                style={{
+                                                    padding: '6px 14px',
+                                                    backgroundColor: '#2563eb',
+                                                    color: '#fff',
+                                                    borderRadius: '8px',
+                                                    fontSize: '12px', fontWeight: 700,
+                                                    textDecoration: 'none',
+                                                    display: 'flex', alignItems: 'center', gap: '5px',
+                                                    flexShrink: 0,
+                                                    transition: 'background 0.15s',
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2563eb'}
+                                            >
+                                                ⬇️ Download
+                                            </a>
+                                        </div>
+                                    )}
+
+                                    {/* ── Passport Photo attached by student ── */}
+                                    {app.passportPhotoUrl && (
+                                        <div style={{
+                                            marginTop: '8px',
+                                            padding: '10px 14px',
+                                            backgroundColor: '#f0fdf4',
+                                            border: '1px solid #bbf7d0',
+                                            borderRadius: '10px',
+                                            display: 'flex', alignItems: 'center', gap: '12px',
+                                        }}>
+                                            {/* Thumbnail */}
+                                            <img
+                                                src={app.passportPhotoUrl}
+                                                alt="passport"
+                                                style={{
+                                                    width: '52px', height: '52px',
+                                                    borderRadius: '8px', objectFit: 'cover',
+                                                    flexShrink: 0,
+                                                    border: '2px solid #86efac',
+                                                }}
+                                            />
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#15803d' }}>
+                                                    Student's Passport Photo
+                                                </p>
+                                                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {app.passportPhotoName || 'photo'}
+                                                </p>
+                                            </div>
+                                            <a
+                                                href={app.passportPhotoUrl}
+                                                download={app.passportPhotoName || 'passport-photo'}
+                                                style={{
+                                                    padding: '6px 14px',
+                                                    backgroundColor: '#16a34a',
+                                                    color: '#fff',
+                                                    borderRadius: '8px',
+                                                    fontSize: '12px', fontWeight: 700,
+                                                    textDecoration: 'none',
+                                                    display: 'flex', alignItems: 'center', gap: '5px',
+                                                    flexShrink: 0,
+                                                    transition: 'background 0.15s',
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#15803d'}
+                                                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#16a34a'}
+                                            >
+                                                ⬇️ Download
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* ── Actions ── */}

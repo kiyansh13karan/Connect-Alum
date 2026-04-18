@@ -9,6 +9,12 @@ const appointmentSchema = new mongoose.Schema({
     description: { type: String, required: true },
     status: { type: String, enum: ["pending", "approved", "rejected", "completed"], default: "pending" },
     meetingLink: { type: String, default: "" }, // Will optionally be populated by alumni later
+    // Resume attachment (base64 or URL, uploaded by student when booking)
+    resumeUrl: { type: String, default: "" },
+    resumeName: { type: String, default: "" },
+    // Passport-size photo attachment
+    passportPhotoUrl: { type: String, default: "" },
+    passportPhotoName: { type: String, default: "" },
 }, { timestamps: true });
 
 const appointmentModel = mongoose.models.appointment || mongoose.model("appointment", appointmentSchema);

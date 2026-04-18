@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 import { StoreContext } from '../../context/StoreContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -6,6 +6,7 @@ import {
     faCalendarCheck, faCalendarPlus, faUserTie,
     faCalendarAlt, faClock, faCheckCircle,
     faHourglassHalf, faTimesCircle, faVideo,
+    faUpload, faTimes, faFilePdf, faFileWord, faFile, faImage,
 } from '@fortawesome/free-solid-svg-icons';
 
 /* ── Status badge config ─────────────────────────────────── */
@@ -38,6 +39,20 @@ const labelStyle = {
 };
 
 /* ── Main Component ──────────────────────────────────────── */
+const MAX_FILE_MB = 5;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+
+const getResumeIcon = (type = '') => {
+    if (type.includes('pdf')) return faFilePdf;
+    if (type.includes('word') || type.includes('document')) return faFileWord;
+    return faFile;
+};
+const getResumeIconColor = (type = '') => {
+    if (type.includes('pdf')) return '#ef4444';
+    if (type.includes('word') || type.includes('document')) return '#2563eb';
+    return '#6366f1';
+};
+
 const Appointments = () => {
     const { url, token } = useContext(StoreContext);
     const [appointments, setAppointments] = useState([]);
@@ -50,6 +65,14 @@ const Appointments = () => {
         alumniId: '', date: '', time: '', topic: '', description: '',
     });
     const [currentUser, setCurrentUser] = useState(null);
+    // Resume attachment
+    const [resume, setResume] = useState(null); // { name, type, dataUrl }
+    const [resumeError, setResumeError] = useState('');
+    const resumeInputRef = useRef(null);
+    // Passport photo attachment
+    const [passportPhoto, setPassportPhoto] = useState(null); // { name, type, dataUrl }
+    const [passportError, setPassportError] = useState('');
+    const passportInputRef = useRef(null);
 
     // ── Initial load + auto-poll every 10 s ──
     useEffect(() => {
@@ -103,13 +126,63 @@ const Appointments = () => {
 
     const handleInputChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+    const handleResumeSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setResumeError('');
+        if (file.size > MAX_FILE_BYTES) {
+            setResumeError(`File too large. Max ${MAX_FILE_MB}MB allowed.`);
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => setResume({ name: file.name, type: file.type, dataUrl: ev.target.result });
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const removeResume = () => { setResume(null); setResumeError(''); };
+
+    const handlePassportSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setPassportError('');
+        if (!file.type.startsWith('image/')) {
+            setPassportError('Only image files are accepted for passport photo.');
+            e.target.value = '';
+            return;
+        }
+        if (file.size > MAX_FILE_BYTES) {
+            setPassportError(`File too large. Max ${MAX_FILE_MB}MB allowed.`);
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => setPassportPhoto({ name: file.name, type: file.type, dataUrl: ev.target.result });
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const removePassport = () => { setPassportPhoto(null); setPassportError(''); };
+
     const handleBook = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post(url + '/api/student/book-appointment', formData, { headers: { Authorization: `Bearer ${token}` } });
+            const payload = { ...formData };
+            if (resume) {
+                payload.resumeUrl  = resume.dataUrl;
+                payload.resumeName = resume.name;
+            }
+            if (passportPhoto) {
+                payload.passportPhotoUrl  = passportPhoto.dataUrl;
+                payload.passportPhotoName = passportPhoto.name;
+            }
+            const res = await axios.post(url + '/api/student/book-appointment', payload, { headers: { Authorization: `Bearer ${token}` } });
             if (res.data.success) {
                 setSubmitted(true);
                 setFormData({ alumniId: '', date: '', time: '', topic: '', description: '' });
+                setResume(null);
+                setPassportPhoto(null);
                 fetchAppointments();
                 setTimeout(() => setSubmitted(false), 4000);
             } else {
@@ -309,6 +382,156 @@ const Appointments = () => {
                                 onFocus={e => { e.target.style.borderColor = '#93c5fd'; e.target.style.backgroundColor = '#fff'; }}
                                 onBlur={e => { e.target.style.borderColor = '#e5e7eb'; e.target.style.backgroundColor = '#f9fafb'; }}
                             />
+                        </div>
+
+                        {/* ── Resume Upload ── */}
+                        <div>
+                            <label style={labelStyle}>
+                                <FontAwesomeIcon icon={faUpload} style={{ marginRight: '6px', color: '#9ca3af' }} />
+                                Attach Resume <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional, PDF/Word, max 5MB)</span>
+                            </label>
+                            {/* Hidden file input */}
+                            <input
+                                ref={resumeInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                onChange={handleResumeSelect}
+                                style={{ display: 'none' }}
+                            />
+                            {resume ? (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: '10px',
+                                    padding: '10px 14px',
+                                    backgroundColor: '#eff6ff',
+                                    border: '1px solid #bfdbfe',
+                                    borderRadius: '10px',
+                                }}>
+                                    <FontAwesomeIcon
+                                        icon={getResumeIcon(resume.type)}
+                                        style={{ fontSize: '20px', color: getResumeIconColor(resume.type), flexShrink: 0 }}
+                                    />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1d4ed8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {resume.name}
+                                        </p>
+                                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#6b7280' }}>Will be shared with the mentor</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={removeResume}
+                                        style={{
+                                            width: '28px', height: '28px', borderRadius: '50%',
+                                            border: 'none', backgroundColor: '#dbeafe', color: '#1d4ed8',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '12px', flexShrink: 0,
+                                        }}
+                                    >
+                                        <FontAwesomeIcon icon={faTimes} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => resumeInputRef.current?.click()}
+                                    style={{
+                                        width: '100%', padding: '10px 14px',
+                                        border: '1.5px dashed #d1d5db',
+                                        borderRadius: '10px',
+                                        backgroundColor: '#f9fafb',
+                                        color: '#6b7280',
+                                        fontSize: '13px', fontWeight: 500,
+                                        cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        transition: 'border 0.15s, background 0.15s',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#2563eb'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = '#f9fafb'; e.currentTarget.style.color = '#6b7280'; }}
+                                >
+                                    <FontAwesomeIcon icon={faUpload} />
+                                    Click to attach your resume
+                                </button>
+                            )}
+                            {resumeError && (
+                                <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#b91c1c', fontWeight: 600 }}>⚠️ {resumeError}</p>
+                            )}
+                        </div>
+
+                        {/* ── Passport Photo Upload ── */}
+                        <div>
+                            <label style={labelStyle}>
+                                <FontAwesomeIcon icon={faImage} style={{ marginRight: '6px', color: '#9ca3af' }} />
+                                Attach Passport-Size Photo <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional, image only, max 5MB)</span>
+                            </label>
+                            {/* Hidden file input — images only */}
+                            <input
+                                ref={passportInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handlePassportSelect}
+                                style={{ display: 'none' }}
+                            />
+                            {passportPhoto ? (
+                                <div style={{
+                                    display: 'flex', alignItems: 'center', gap: '10px',
+                                    padding: '10px 14px',
+                                    backgroundColor: '#f0fdf4',
+                                    border: '1px solid #bbf7d0',
+                                    borderRadius: '10px',
+                                }}>
+                                    {/* Live thumbnail */}
+                                    <img
+                                        src={passportPhoto.dataUrl}
+                                        alt="passport preview"
+                                        style={{
+                                            width: '44px', height: '44px',
+                                            borderRadius: '8px', objectFit: 'cover',
+                                            flexShrink: 0, border: '2px solid #86efac',
+                                        }}
+                                    />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#15803d', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {passportPhoto.name}
+                                        </p>
+                                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#6b7280' }}>Photo ready to attach</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={removePassport}
+                                        style={{
+                                            width: '28px', height: '28px', borderRadius: '50%',
+                                            border: 'none', backgroundColor: '#dcfce7', color: '#15803d',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '12px', flexShrink: 0,
+                                        }}
+                                    >
+                                        <FontAwesomeIcon icon={faTimes} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => passportInputRef.current?.click()}
+                                    style={{
+                                        width: '100%', padding: '10px 14px',
+                                        border: '1.5px dashed #d1d5db',
+                                        borderRadius: '10px',
+                                        backgroundColor: '#f9fafb',
+                                        color: '#6b7280',
+                                        fontSize: '13px', fontWeight: 500,
+                                        cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        transition: 'border 0.15s, background 0.15s',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#6ee7b7'; e.currentTarget.style.backgroundColor = '#f0fdf4'; e.currentTarget.style.color = '#15803d'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.backgroundColor = '#f9fafb'; e.currentTarget.style.color = '#6b7280'; }}
+                                >
+                                    <FontAwesomeIcon icon={faImage} />
+                                    Click to attach passport-size photo
+                                </button>
+                            )}
+                            {passportError && (
+                                <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#b91c1c', fontWeight: 600 }}>⚠️ {passportError}</p>
+                            )}
                         </div>
 
                         <button

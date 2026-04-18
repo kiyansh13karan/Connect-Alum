@@ -28,11 +28,16 @@ export const browseMentors = async (req, res) => {
     }
 };
 
-// 2. Send Message to Connected Mentor
+// 2. Send Message to Connected Mentor (supports text + document attachment)
 export const sendMessage = async (req, res) => {
     try {
-        const { receiverId, content } = req.body;
+        const { receiverId, content, fileUrl, fileName, fileType } = req.body;
         const senderId = req.userId;
+
+        // Must have either text or a file
+        if (!content?.trim() && !fileUrl) {
+            return res.status(400).json({ success: false, message: "Message must have content or a file attachment." });
+        }
 
         // Security: Ensure they are actually connected
         const connected = await isConnected(senderId, receiverId);
@@ -40,7 +45,14 @@ export const sendMessage = async (req, res) => {
             return res.status(403).json({ success: false, message: "You can only message mentors who have accepted your connection request." });
         }
 
-        const newMessage = new messageModel({ sender: senderId, receiver: receiverId, content });
+        const newMessage = new messageModel({
+            sender: senderId,
+            receiver: receiverId,
+            content: content?.trim() || "",
+            fileUrl: fileUrl || "",
+            fileName: fileName || "",
+            fileType: fileType || "",
+        });
         await newMessage.save();
 
         res.json({ success: true, message: "Message sent successfully", data: newMessage });
@@ -68,10 +80,10 @@ export const getMessages = async (req, res) => {
     }
 };
 
-// 4. Book an Appointment
+// 4. Book an Appointment (supports optional resume attachment)
 export const bookAppointment = async (req, res) => {
     try {
-        const { alumniId, date, time, topic, description } = req.body;
+        const { alumniId, date, time, topic, description, resumeUrl, resumeName, passportPhotoUrl, passportPhotoName } = req.body;
         const studentId = req.userId;
 
         // Security: Ensure they are connected
@@ -86,7 +98,11 @@ export const bookAppointment = async (req, res) => {
             date,
             time,
             topic,
-            description
+            description,
+            resumeUrl: resumeUrl || "",
+            resumeName: resumeName || "",
+            passportPhotoUrl: passportPhotoUrl || "",
+            passportPhotoName: passportPhotoName || "",
         });
         await newAppointment.save();
 

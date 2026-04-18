@@ -18,20 +18,55 @@ const getAvatar = (name = '') => {
     return { initials, bg, fg };
 };
 
+/* ── File helpers ────────────────────────────────────────── */
+const getFileColor = (fileType = '') => {
+    if (fileType.includes('pdf')) return '#ef4444';
+    if (fileType.includes('word') || fileType.includes('document')) return '#2563eb';
+    if (fileType.includes('image')) return '#10b981';
+    return '#6366f1';
+};
+
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+/* ── Open data: URL in new tab via Blob ─────────────────── */
+const openInNewTab = (dataUrl, fileType) => {
+    try {
+        const [meta, base64] = dataUrl.split(',');
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: fileType || 'application/octet-stream' });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+    } catch (e) {
+        console.error('Could not open file:', e);
+    }
+};
+
+/* ── File size formatted icon ─────────────────────────────── */
+const FileIcon = ({ fileType, color, size = 22 }) => {
+    const emoji = fileType?.includes('pdf') ? '📄' : fileType?.includes('image') ? '🖼️' : '📎';
+    return <span style={{ fontSize: `${size}px` }}>{emoji}</span>;
+};
+
 /* ── Main Component ──────────────────────────────────────── */
 const Messages = () => {
     const { url, token } = useContext(StoreContext);
 
-    const [conversations, setConversations] = useState([]);   // [{student, lastMessage, lastTime}]
-    const [activeStudent, setActiveStudent]   = useState(null); // student object
+    const [conversations, setConversations] = useState([]);
+    const [activeStudent, setActiveStudent]   = useState(null);
     const [messages, setMessages]             = useState([]);
     const [inputText, setInputText]           = useState('');
     const [search, setSearch]                 = useState('');
     const [loading, setLoading]               = useState(true);
     const [sending, setSending]               = useState(false);
     const [error, setError]                   = useState('');
+    const [attachedFile, setAttachedFile]     = useState(null); // { name, type, dataUrl }
+    const [fileError, setFileError]           = useState('');
 
     const messagesEndRef = useRef(null);
+    const fileInputRef   = useRef(null);
 
     /* ── Data fetching ─────────────────────────────────────── */
     useEffect(() => { fetchConversations(); }, [url, token]);
@@ -65,7 +100,6 @@ const Messages = () => {
             });
             if (res.data.success) {
                 setConversations(res.data.conversations);
-                // Auto-select the first conversation
                 if (res.data.conversations.length > 0 && !activeStudent) {
                     setActiveStudent(res.data.conversations[0].student);
                 }
@@ -89,20 +123,54 @@ const Messages = () => {
         }
     };
 
+    /* ── File select ─────────────────────────────────────── */
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setFileError('');
+
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            setFileError(`File too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setAttachedFile({ name: file.name, type: file.type, dataUrl: ev.target.result });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const removeAttachment = () => {
+        setAttachedFile(null);
+        setFileError('');
+    };
+
     const sendMessage = async (e) => {
         e.preventDefault();
-        if (!inputText.trim() || !activeStudent || sending) return;
+        if ((!inputText.trim() && !attachedFile) || !activeStudent || sending) return;
         setSending(true);
         try {
+            const payload = {
+                receiverId: activeStudent._id,
+                content: inputText.trim(),
+            };
+            if (attachedFile) {
+                payload.fileUrl  = attachedFile.dataUrl;
+                payload.fileName = attachedFile.name;
+                payload.fileType = attachedFile.type;
+            }
             const res = await axios.post(
                 `${url}/api/alumni-role/message`,
-                { receiverId: activeStudent._id, content: inputText.trim() },
+                payload,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (res.data.success) {
                 setMessages(prev => [...prev, res.data.data]);
                 setInputText('');
-                // Refresh conversations list so last message updates
+                setAttachedFile(null);
                 fetchConversations();
             }
         } catch (err) {
@@ -121,6 +189,70 @@ const Messages = () => {
         c.student?.email?.toLowerCase().includes(search.toLowerCase())
     );
 
+    /* ── File bubble renderer ─────────────────────────────── */
+    const renderFileBubble = (msg, isMine) => {
+        if (!msg.fileUrl) return null;
+        const isImage = msg.fileType?.includes('image');
+        const iconColor = getFileColor(msg.fileType);
+        return (
+            <div style={{
+                marginTop: msg.content ? '8px' : '0',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                border: isMine ? '1px solid rgba(255,255,255,0.2)' : '1px solid #e5e7eb',
+            }}>
+                {isImage ? (
+                    <img src={msg.fileUrl} alt={msg.fileName} style={{ maxWidth: '200px', maxHeight: '160px', display: 'block', borderRadius: '8px' }} />
+                ) : (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 14px',
+                        backgroundColor: isMine ? 'rgba(255,255,255,0.1)' : '#f3f4f6',
+                        borderRadius: '10px',
+                    }}>
+                        <FileIcon fileType={msg.fileType} size={22} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: isMine ? '#fff' : '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }}>
+                                {msg.fileName}
+                            </p>
+                            <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: isMine ? 'rgba(255,255,255,0.6)' : '#94a3b8' }}>
+                                Shared document
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                            <button
+                                onClick={() => openInNewTab(msg.fileUrl, msg.fileType)}
+                                style={{
+                                    padding: '4px 10px', fontSize: '11px', fontWeight: 600,
+                                    borderRadius: '6px', textDecoration: 'none', cursor: 'pointer',
+                                    backgroundColor: isMine ? 'rgba(255,255,255,0.25)' : '#ede9fe',
+                                    color: isMine ? '#fff' : '#6d28d9',
+                                    border: isMine ? '1px solid rgba(255,255,255,0.4)' : '1px solid #ddd6fe',
+                                    fontFamily: 'inherit',
+                                }}
+                            >
+                                Open
+                            </button>
+                            <a
+                                href={msg.fileUrl}
+                                download={msg.fileName}
+                                style={{
+                                    padding: '4px 10px', fontSize: '11px', fontWeight: 600,
+                                    borderRadius: '6px', textDecoration: 'none', cursor: 'pointer',
+                                    backgroundColor: isMine ? 'rgba(255,255,255,0.15)' : '#f1f5f9',
+                                    color: isMine ? '#fff' : '#374151',
+                                    border: isMine ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e2e8f0',
+                                }}
+                            >
+                                Save
+                            </a>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     /* ── Render ────────────────────────────────────────────── */
     return (
         <div className="ap-page">
@@ -128,7 +260,7 @@ const Messages = () => {
             <div className="ap-page-header">
                 <div>
                     <h1 className="ap-page-title">Messages</h1>
-                    <p className="ap-page-sub">Chat with your connected mentees</p>
+                    <p className="ap-page-sub">Chat & share documents with your connected mentees</p>
                 </div>
             </div>
 
@@ -226,9 +358,19 @@ const Messages = () => {
                                             {activeStudent.currentRole || activeStudent.email || 'Student'}
                                         </p>
                                     </div>
-                                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
-                                        Connected
+                                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        {/* Doc hint */}
+                                        <span style={{
+                                            fontSize: '11px', color: '#6b7280',
+                                            backgroundColor: '#f1f5f9', padding: '4px 10px',
+                                            borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '5px',
+                                        }}>
+                                            📎 Docs up to 5MB
+                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
+                                            Connected
+                                        </div>
                                     </div>
                                 </div>
 
@@ -242,6 +384,7 @@ const Messages = () => {
                                         </div>
                                     ) : messages.map(msg => {
                                         const isMine = msg.sender !== activeStudent._id;
+                                        const hasFile = !!msg.fileUrl;
                                         return (
                                             <div
                                                 key={msg._id}
@@ -256,7 +399,8 @@ const Messages = () => {
                                                     </div>
                                                 )}
                                                 <div className={`ap-bubble ${isMine ? 'ap-bubble-me' : 'ap-bubble-them'}`}>
-                                                    <p>{msg.content}</p>
+                                                    {msg.content && <p>{msg.content}</p>}
+                                                    {hasFile && renderFileBubble(msg, isMine)}
                                                     <span className="ap-bubble-time">
                                                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
@@ -267,13 +411,71 @@ const Messages = () => {
                                     <div ref={messagesEndRef} />
                                 </div>
 
+                                {/* Attachment Preview */}
+                                {attachedFile && (
+                                    <div style={{
+                                        padding: '10px 20px',
+                                        borderTop: '1px solid #e2e8f0',
+                                        backgroundColor: '#f0f9ff',
+                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                    }}>
+                                        <FileIcon fileType={attachedFile.type} size={22} />
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {attachedFile.name}
+                                            </p>
+                                            <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#64748b' }}>Ready to send</p>
+                                        </div>
+                                        <button onClick={removeAttachment} style={{
+                                            width: '28px', height: '28px', borderRadius: '50%',
+                                            border: 'none', backgroundColor: '#e0f2fe', color: '#0369a1',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '13px', flexShrink: 0,
+                                        }}>
+                                            ✕
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* File error */}
+                                {fileError && (
+                                    <div style={{ padding: '8px 20px', backgroundColor: '#fef2f2', borderTop: '1px solid #fecaca' }}>
+                                        <p style={{ margin: 0, fontSize: '12px', color: '#b91c1c', fontWeight: 600 }}>⚠️ {fileError}</p>
+                                    </div>
+                                )}
+
                                 {/* Input Bar */}
                                 <div className="ap-chat-input-bar">
-                                    <form onSubmit={sendMessage} style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%' }}>
+                                    {/* Hidden file input */}
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt,.xls,.xlsx,.ppt,.pptx"
+                                        onChange={handleFileSelect}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <form onSubmit={sendMessage} style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                                        {/* Attach button */}
+                                        <button
+                                            type="button"
+                                            id="alumni-attach-btn"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            title="Attach document"
+                                            style={{
+                                                width: '40px', height: '40px', borderRadius: '50%',
+                                                border: '1px solid #e2e8f0',
+                                                backgroundColor: attachedFile ? '#e0f2fe' : '#f8fafc',
+                                                color: attachedFile ? '#0369a1' : '#94a3b8',
+                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '16px', flexShrink: 0, transition: 'all 0.15s',
+                                            }}
+                                        >
+                                            📎
+                                        </button>
                                         <input
                                             id="chat-input"
                                             className="ap-chat-input"
-                                            placeholder={`Message ${activeStudent.name}…`}
+                                            placeholder={attachedFile ? `Add a message (optional)…` : `Message ${activeStudent.name}…`}
                                             value={inputText}
                                             onChange={e => setInputText(e.target.value)}
                                             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(e)}
@@ -283,8 +485,8 @@ const Messages = () => {
                                             id="chat-send-btn"
                                             type="submit"
                                             className="ap-chat-send"
-                                            disabled={!inputText.trim() || sending}
-                                            style={{ opacity: (!inputText.trim() || sending) ? 0.5 : 1 }}
+                                            disabled={(!inputText.trim() && !attachedFile) || sending}
+                                            style={{ opacity: ((!inputText.trim() && !attachedFile) || sending) ? 0.5 : 1 }}
                                         >
                                             {sending ? '…' : '➤'}
                                         </button>
@@ -301,6 +503,9 @@ const Messages = () => {
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#374151', margin: 0 }}>Your Messages</h3>
                             <p style={{ fontSize: '0.875rem', color: '#9ca3af', marginTop: '10px', maxWidth: '280px', lineHeight: 1.6 }}>
                                 Select a connected student from the left panel to view or start a conversation.
+                            </p>
+                            <p style={{ fontSize: '0.78rem', color: '#a78bfa', marginTop: '8px' }}>
+                                📎 You can also share documents & files in chat
                             </p>
                         </div>
                     )}

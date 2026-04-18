@@ -193,11 +193,12 @@ router.get("/messages/:studentId", async (req, res) => {
  */
 router.post("/message", async (req, res) => {
     try {
-        const { receiverId, content } = req.body;
+        const { receiverId, content, fileUrl, fileName, fileType } = req.body;
         const alumniId = req.userId;
 
-        if (!receiverId || !content?.trim()) {
-            return res.status(400).json({ success: false, message: "receiverId and content are required." });
+        // Must have either text content or a file attachment
+        if (!receiverId || (!content?.trim() && !fileUrl)) {
+            return res.status(400).json({ success: false, message: "receiverId and content or file are required." });
         }
 
         // Security: must have an accepted connection
@@ -216,7 +217,10 @@ router.post("/message", async (req, res) => {
         const newMessage = await messageModel.create({
             sender: alumniId,
             receiver: receiverId,
-            content: content.trim(),
+            content: content?.trim() || "",
+            fileUrl: fileUrl || "",
+            fileName: fileName || "",
+            fileType: fileType || "",
         });
 
         res.status(201).json({ success: true, message: "Message sent.", data: newMessage });

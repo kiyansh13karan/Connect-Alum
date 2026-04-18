@@ -2,7 +2,11 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 import { StoreContext } from '../../context/StoreContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPaperPlane, faUserTie, faComments, faSearch } from '@fortawesome/free-solid-svg-icons';
+import {
+    faPaperPlane, faUserTie, faComments, faSearch,
+    faPaperclip, faFile, faFilePdf, faFileWord, faFileImage,
+    faTimes, faDownload,
+} from '@fortawesome/free-solid-svg-icons';
 
 /* ── Avatar helper ───────────────────────────────────────── */
 const avatarPalette = [
@@ -16,6 +20,40 @@ const getAvatar = (name = '') => {
     return { initials, bg, fg };
 };
 
+/* ── File icon helper ────────────────────────────────────── */
+const getFileIcon = (fileType = '') => {
+    if (fileType.includes('pdf')) return faFilePdf;
+    if (fileType.includes('word') || fileType.includes('document')) return faFileWord;
+    if (fileType.includes('image')) return faFileImage;
+    return faFile;
+};
+
+const getFileIconColor = (fileType = '') => {
+    if (fileType.includes('pdf')) return '#ef4444';
+    if (fileType.includes('word') || fileType.includes('document')) return '#2563eb';
+    if (fileType.includes('image')) return '#10b981';
+    return '#6366f1';
+};
+
+/* ── Open data: URL in new tab via Blob ─────────────────── */
+const openInNewTab = (dataUrl, fileType) => {
+    try {
+        const [meta, base64] = dataUrl.split(',');
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: fileType || 'application/octet-stream' });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+    } catch (e) {
+        console.error('Could not open file:', e);
+    }
+};
+
+/* ── File size formatter ─────────────────────────────────── */
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 /* ── Main Component ──────────────────────────────────────── */
 const MessagesView = () => {
     const { url, token } = useContext(StoreContext);
@@ -24,7 +62,10 @@ const MessagesView = () => {
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
     const [search, setSearch] = useState('');
+    const [attachedFile, setAttachedFile] = useState(null); // { name, type, dataUrl }
+    const [fileError, setFileError] = useState('');
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     useEffect(() => { fetchContacts(); }, [url, token]);
     useEffect(() => { if (activeContact) fetchMessages(activeContact._id); }, [activeContact]);
@@ -56,17 +97,51 @@ const MessagesView = () => {
         } catch (err) { console.error('Error fetching messages:', err); }
     };
 
+    /* ── Handle file selection ── */
+    const handleFileSelect = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setFileError('');
+
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            setFileError(`File too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
+            e.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setAttachedFile({ name: file.name, type: file.type, dataUrl: ev.target.result });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const removeAttachment = () => {
+        setAttachedFile(null);
+        setFileError('');
+    };
+
     const sendMessage = async (e) => {
         e.preventDefault();
-        if (!inputText.trim() || !activeContact) return;
+        if ((!inputText.trim() && !attachedFile) || !activeContact) return;
         try {
-            const res = await axios.post(`${url}/api/student/message`, {
+            const payload = {
                 receiverId: activeContact._id,
                 content: inputText,
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            };
+            if (attachedFile) {
+                payload.fileUrl = attachedFile.dataUrl;
+                payload.fileName = attachedFile.name;
+                payload.fileType = attachedFile.type;
+            }
+            const res = await axios.post(`${url}/api/student/message`, payload,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             if (res.data.success) {
                 setMessages(prev => [...prev, res.data.data]);
                 setInputText('');
+                setAttachedFile(null);
             }
         } catch (err) {
             console.error('Error sending message:', err);
@@ -76,6 +151,70 @@ const MessagesView = () => {
     const filteredContacts = contacts.filter(c =>
         !search || c.name?.toLowerCase().includes(search.toLowerCase()) || c.company?.toLowerCase().includes(search.toLowerCase())
     );
+
+    /* ── File bubble renderer ── */
+    const renderFileBubble = (msg, isMine) => {
+        if (!msg.fileUrl) return null;
+        const isImage = msg.fileType?.includes('image');
+        const iconColor = getFileIconColor(msg.fileType);
+        return (
+            <div style={{
+                marginTop: msg.content ? '8px' : '0',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                border: isMine ? '1px solid rgba(255,255,255,0.25)' : '1px solid #e5e7eb',
+            }}>
+                {isImage ? (
+                    <img src={msg.fileUrl} alt={msg.fileName} style={{ maxWidth: '200px', maxHeight: '160px', display: 'block', borderRadius: '8px' }} />
+                ) : (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 14px',
+                        backgroundColor: isMine ? 'rgba(255,255,255,0.12)' : '#f3f4f6',
+                        borderRadius: '10px',
+                    }}>
+                        <FontAwesomeIcon icon={getFileIcon(msg.fileType)} style={{ fontSize: '22px', color: isMine ? '#fff' : iconColor, flexShrink: 0 }} />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: isMine ? '#fff' : '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '140px' }}>
+                                {msg.fileName}
+                            </p>
+                            <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: isMine ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}>
+                                Shared document
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                            <button
+                                onClick={() => openInNewTab(msg.fileUrl, msg.fileType)}
+                                style={{
+                                    padding: '4px 10px', fontSize: '11px', fontWeight: 600,
+                                    borderRadius: '6px', textDecoration: 'none', cursor: 'pointer',
+                                    backgroundColor: isMine ? 'rgba(255,255,255,0.25)' : '#dbeafe',
+                                    color: isMine ? '#fff' : '#1d4ed8',
+                                    border: isMine ? '1px solid rgba(255,255,255,0.4)' : '1px solid #bfdbfe',
+                                    fontFamily: 'inherit',
+                                }}
+                            >
+                                Open
+                            </button>
+                            <a
+                                href={msg.fileUrl}
+                                download={msg.fileName}
+                                style={{
+                                    padding: '4px 10px', fontSize: '11px', fontWeight: 600,
+                                    borderRadius: '6px', textDecoration: 'none', cursor: 'pointer',
+                                    backgroundColor: isMine ? 'rgba(255,255,255,0.15)' : '#f3f4f6',
+                                    color: isMine ? '#fff' : '#374151',
+                                    border: isMine ? '1px solid rgba(255,255,255,0.3)' : '1px solid #d1d5db',
+                                }}
+                            >
+                                Save
+                            </a>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '28px 24px', height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column', gap: '0' }}>
@@ -91,7 +230,7 @@ const MessagesView = () => {
                 </div>
                 <div>
                     <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#111827', margin: 0 }}>Messages</h1>
-                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>Chat with your connected mentors</p>
+                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>Chat & share documents with your connected mentors</p>
                 </div>
             </div>
 
@@ -228,11 +367,24 @@ const MessagesView = () => {
                                         <p style={{ fontSize: '12px', color: '#9ca3af', margin: '2px 0 0 0' }}>{activeContact.company || 'Alumni Mentor'}</p>
                                     </div>
                                     <div style={{
-                                        marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px',
-                                        fontSize: '12px', color: '#16a34a', fontWeight: 600,
+                                        marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '12px',
                                     }}>
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
-                                        Connected
+                                        {/* Document share hint */}
+                                        <span style={{
+                                            fontSize: '11px', color: '#6b7280',
+                                            backgroundColor: '#f3f4f6', padding: '4px 10px',
+                                            borderRadius: '999px', display: 'flex', alignItems: 'center', gap: '5px',
+                                        }}>
+                                            <FontAwesomeIcon icon={faPaperclip} style={{ fontSize: '10px' }} />
+                                            Docs up to 5MB
+                                        </span>
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: '6px',
+                                            fontSize: '12px', color: '#16a34a', fontWeight: 600,
+                                        }}>
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
+                                            Connected
+                                        </div>
                                     </div>
                                 </div>
 
@@ -251,6 +403,7 @@ const MessagesView = () => {
                                         </div>
                                     ) : messages.map(msg => {
                                         const isMine = msg.sender !== activeContact._id;
+                                        const hasFile = !!msg.fileUrl;
                                         return (
                                             <div key={msg._id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
                                                 <div style={{
@@ -262,7 +415,10 @@ const MessagesView = () => {
                                                     border: isMine ? 'none' : '1px solid #e5e7eb',
                                                     boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                                                 }}>
-                                                    <p style={{ fontSize: '14px', margin: 0, lineHeight: 1.5 }}>{msg.content}</p>
+                                                    {msg.content && (
+                                                        <p style={{ fontSize: '14px', margin: 0, lineHeight: 1.5 }}>{msg.content}</p>
+                                                    )}
+                                                    {hasFile && renderFileBubble(msg, isMine)}
                                                     <p style={{ fontSize: '10px', margin: '4px 0 0 0', textAlign: 'right', color: isMine ? 'rgba(255,255,255,0.65)' : '#9ca3af' }}>
                                                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </p>
@@ -273,14 +429,73 @@ const MessagesView = () => {
                                     <div ref={messagesEndRef} />
                                 </div>
 
+                                {/* Attachment Preview */}
+                                {attachedFile && (
+                                    <div style={{
+                                        padding: '10px 20px',
+                                        borderTop: '1px solid #f3f4f6',
+                                        backgroundColor: '#eff6ff',
+                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                    }}>
+                                        <FontAwesomeIcon icon={getFileIcon(attachedFile.type)} style={{ fontSize: '20px', color: getFileIconColor(attachedFile.type) }} />
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#1d4ed8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {attachedFile.name}
+                                            </p>
+                                            <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#6b7280' }}>Ready to send</p>
+                                        </div>
+                                        <button onClick={removeAttachment} style={{
+                                            width: '28px', height: '28px', borderRadius: '50%',
+                                            border: 'none', backgroundColor: '#dbeafe', color: '#1d4ed8',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '12px', flexShrink: 0,
+                                        }}>
+                                            <FontAwesomeIcon icon={faTimes} />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* File error */}
+                                {fileError && (
+                                    <div style={{ padding: '8px 20px', backgroundColor: '#fef2f2', borderTop: '1px solid #fecaca' }}>
+                                        <p style={{ margin: 0, fontSize: '12px', color: '#b91c1c', fontWeight: 600 }}>⚠️ {fileError}</p>
+                                    </div>
+                                )}
+
                                 {/* Input */}
                                 <div style={{ padding: '16px 20px', borderTop: '1px solid #f3f4f6', backgroundColor: '#fff' }}>
                                     <form onSubmit={sendMessage} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        {/* Hidden file input */}
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt,.xls,.xlsx,.ppt,.pptx"
+                                            onChange={handleFileSelect}
+                                            style={{ display: 'none' }}
+                                        />
+                                        {/* Attach button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            title="Attach document"
+                                            style={{
+                                                width: '40px', height: '40px', borderRadius: '50%',
+                                                border: '1px solid #e5e7eb',
+                                                backgroundColor: attachedFile ? '#dbeafe' : '#f9fafb',
+                                                color: attachedFile ? '#2563eb' : '#9ca3af',
+                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '15px', flexShrink: 0, transition: 'all 0.15s',
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#dbeafe'; e.currentTarget.style.color = '#2563eb'; }}
+                                            onMouseLeave={e => { if (!attachedFile) { e.currentTarget.style.backgroundColor = '#f9fafb'; e.currentTarget.style.color = '#9ca3af'; } }}
+                                        >
+                                            <FontAwesomeIcon icon={faPaperclip} />
+                                        </button>
                                         <input
                                             type="text"
                                             value={inputText}
                                             onChange={e => setInputText(e.target.value)}
-                                            placeholder="Type a message..."
+                                            placeholder={attachedFile ? 'Add a message (optional)…' : 'Type a message…'}
                                             style={{
                                                 flex: 1, padding: '11px 18px',
                                                 border: '1px solid #e5e7eb',
@@ -295,13 +510,13 @@ const MessagesView = () => {
                                         />
                                         <button
                                             type="submit"
-                                            disabled={!inputText.trim()}
+                                            disabled={!inputText.trim() && !attachedFile}
                                             style={{
                                                 width: '44px', height: '44px',
                                                 borderRadius: '50%', border: 'none',
-                                                backgroundColor: inputText.trim() ? '#2563eb' : '#e5e7eb',
-                                                color: inputText.trim() ? '#fff' : '#9ca3af',
-                                                cursor: inputText.trim() ? 'pointer' : 'default',
+                                                backgroundColor: (inputText.trim() || attachedFile) ? '#2563eb' : '#e5e7eb',
+                                                color: (inputText.trim() || attachedFile) ? '#fff' : '#9ca3af',
+                                                cursor: (inputText.trim() || attachedFile) ? 'pointer' : 'default',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 fontSize: '14px', flexShrink: 0,
                                                 transition: 'background 0.15s',
@@ -332,6 +547,9 @@ const MessagesView = () => {
                             <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#374151', margin: 0 }}>Your Private Messages</h3>
                             <p style={{ fontSize: '14px', color: '#9ca3af', marginTop: '10px', maxWidth: '280px', lineHeight: 1.6 }}>
                                 Select a connected mentor from the left panel to view or start a conversation.
+                            </p>
+                            <p style={{ fontSize: '12px', color: '#c4b5fd', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <FontAwesomeIcon icon={faPaperclip} /> You can share documents & files in chat
                             </p>
                         </div>
                     )}
